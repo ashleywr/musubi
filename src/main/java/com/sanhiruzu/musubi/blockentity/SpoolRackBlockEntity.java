@@ -152,6 +152,32 @@ public class SpoolRackBlockEntity extends BlockEntity {
         counts[i] = 0;
     }
 
+    /**
+     * Drops all stored items as item entities at the given position.
+     * Called by SpoolRackBlock.onRemove so contents are never silently lost.
+     */
+    public void dropContents(net.minecraft.world.level.Level level, BlockPos pos) {
+        for (int i = 0; i < SLOTS; i++) {
+            if (itemIds[i] == null || counts[i] == 0) continue;
+            Item item = BuiltInRegistries.ITEM.getOptional(itemIds[i]).orElse(Items.AIR);
+            if (item != Items.AIR) {
+                int remaining = counts[i];
+                while (remaining > 0) {
+                    int batch = Math.min(64, remaining);
+                    net.minecraft.world.entity.item.ItemEntity entity =
+                        new net.minecraft.world.entity.item.ItemEntity(
+                            level,
+                            pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                            new ItemStack(item, batch)
+                        );
+                    level.addFreshEntity(entity);
+                    remaining -= batch;
+                }
+            }
+            clearSlot(i);
+        }
+    }
+
     // ── Read-only accessors (for future renderer / tooltip) ───────────────────
 
     public @Nullable ResourceLocation getSlotItem(int slot) { return itemIds[slot]; }

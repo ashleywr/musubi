@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "musubi:block/spool_rack" },
+    "facing=east":  { "model": "musubi:block/spool_rack", "y": 90 },
+    "facing=south": { "model": "musubi:block/spool_rack", "y": 180 },
+    "facing=west":  { "model": "musubi:block/spool_rack", "y": 270 }
+  }
+}

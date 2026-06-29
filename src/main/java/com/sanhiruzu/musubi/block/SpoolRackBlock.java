@@ -5,14 +5,20 @@ import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
 import com.sanhiruzu.musubi.item.SkeinItem;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 
 import javax.annotation.Nullable;
@@ -20,15 +26,33 @@ import javax.annotation.Nullable;
 /**
  * Stores up to four item types (SLOTS × SLOT_CAPACITY items each).
  *
- * Right-click with a skein   → deposit skein contents; skein stays in hand with remainder
- *                              if the rack is full for some variants.
+ * FACING is the direction the rack's display face points — set to face the player
+ * on placement so the spool icons (rendered by a BER after the model is built) are
+ * always visible from the natural viewing angle.
+ *
+ * Right-click with a skein   → deposit skein contents; skein stays in hand with
+ *                              remainder if the rack fills for some variants.
  * Right-click with empty hand → extract one stack (64) from the first non-empty slot.
  * Shift + right-click         → extract all items from all slots.
  */
 public class SpoolRackBlock extends BaseEntityBlock {
 
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+
     public SpoolRackBlock(Properties properties) {
         super(properties);
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(FACING);
+    }
+
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        // Face toward the player so the display face is always readable.
+        return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
     }
 
     @Override
@@ -62,7 +86,7 @@ public class SpoolRackBlock extends BaseEntityBlock {
 
         SkeinContents remainder = be.depositSkein(contents);
         if (remainder == null) {
-            stack.shrink(1); // fully consumed
+            stack.shrink(1);
         } else {
             stack.set(MusubiDataComponents.SKEIN_CONTENTS, remainder);
         }
@@ -87,6 +111,17 @@ public class SpoolRackBlock extends BaseEntityBlock {
         }
         level.sendBlockUpdated(pos, state, state, 3);
         return InteractionResult.SUCCESS;
+    }
+
+    // ── Break behaviour ───────────────────────────────────────────────────────
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+        if (!state.is(newState.getBlock()) && !level.isClientSide) {
+            SpoolRackBlockEntity be = getBlockEntity(level, pos);
+            if (be != null) be.dropContents(level, pos);
+        }
+        super.onRemove(state, level, pos, newState, isMoving);
     }
 
     @Nullable
