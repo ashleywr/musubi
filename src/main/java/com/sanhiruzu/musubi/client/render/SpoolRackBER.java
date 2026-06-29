@@ -49,6 +49,9 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
     private static final float KICK_BASE   = 0.28f;
     private static final float KICK_JITTER = 0.14f;
 
+    private record SkeinRenderData(int pegIndex, float angle, int color, int shimmerRgb,
+                                   float pendulumLen, float skeinW, float skeinH) {}
+
     /** Accumulated per-position pendulum state. Entries are never evicted;
      *  the leak is negligible (a few hundred bytes per rack ever placed). */
     private static final Map<BlockPos, SkeinPendulum[]> PENDULUMS = new HashMap<>();
@@ -78,8 +81,8 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
 
         PoseStack.Pose poseEntry  = pose.last();
         VertexConsumer vc         = buffers.getBuffer(RENDER_TYPE);
-        VertexConsumer shimmerVc  = buffers.getBuffer(SHIMMER_TYPE);
         int rainbowRgb = MusubiClient.rainbowColor() & 0xFFFFFF;
+        SkeinRenderData[] renderData = new SkeinRenderData[SpoolRackBlockEntity.SLOTS];
 
         for (int i = 0; i < SpoolRackBlockEntity.SLOTS; i++) {
             int count = be.getSlotCount(i);
@@ -109,24 +112,28 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
             float ambient = (float)(Math.sin(gameTick * 0.04 + i * 1.5 + partialTick * 0.04) * 0.012);
             float angle   = p.lerpAngle(partialTick) + ambient;
 
-            drawSkein(poseEntry, vc, shimmerVc, i, angle, color, rainbowRgb, pLen, skeinW, skeinH);
+            renderData[i] = new SkeinRenderData(i, angle, color, rainbowRgb, pLen, skeinW, skeinH);
+            drawSkeinBase(poseEntry, vc, renderData[i]);
+        }
+
+        VertexConsumer shimmerVc  = buffers.getBuffer(SHIMMER_TYPE);
+        for (SkeinRenderData data : renderData) {
+            if (data == null) continue;
+            drawSkeinShimmer(poseEntry, shimmerVc, data);
         }
 
         pose.popPose();
     }
 
-    private static void drawSkein(PoseStack.Pose poseEntry,
-                                  VertexConsumer vc, VertexConsumer shimmerVc,
-                                  int pegIndex, float angle, int color, int shimmerRgb,
-                                  float pendulumLen, float skeinW, float skeinH) {
-        float cx = PEG_X[pegIndex];
-        float cy = PEG_Y - pendulumLen * (float) Math.cos(angle);
-        float cz = PEG_Z + pendulumLen * (float) Math.sin(angle);
+    private static void drawSkeinBase(PoseStack.Pose poseEntry, VertexConsumer vc, SkeinRenderData data) {
+        float cx = PEG_X[data.pegIndex()];
+        float cy = PEG_Y - data.pendulumLen() * (float) Math.cos(data.angle());
+        float cz = PEG_Z + data.pendulumLen() * (float) Math.sin(data.angle());
 
-        float w2 = skeinW / 2f;
-        float h2 = skeinH / 2f;
+        float w2 = data.skeinW() / 2f;
+        float h2 = data.skeinH() / 2f;
+        int color = data.color();
         int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
-        int sr = (shimmerRgb >> 16) & 0xFF, sg = (shimmerRgb >> 8) & 0xFF, sb = shimmerRgb & 0xFF;
 
         Matrix4f m = poseEntry.pose();
 
@@ -143,6 +150,19 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
              cx + w2, cy + h2, cz,   1f, 0f,
              cx - w2, cy + h2, cz,   0f, 0f,
              r, g, b, 255, 0f, 0f, 1f);
+    }
+
+    private static void drawSkeinShimmer(PoseStack.Pose poseEntry, VertexConsumer shimmerVc, SkeinRenderData data) {
+        float cx = PEG_X[data.pegIndex()];
+        float cy = PEG_Y - data.pendulumLen() * (float) Math.cos(data.angle());
+        float cz = PEG_Z + data.pendulumLen() * (float) Math.sin(data.angle());
+
+        float w2 = data.skeinW() / 2f;
+        float h2 = data.skeinH() / 2f;
+        int shimmerRgb = data.shimmerRgb();
+        int sr = (shimmerRgb >> 16) & 0xFF, sg = (shimmerRgb >> 8) & 0xFF, sb = shimmerRgb & 0xFF;
+
+        Matrix4f m = poseEntry.pose();
 
         // Shimmer overlay — offset slightly toward each face's viewer to avoid z-fighting.
         float czF = cz - 0.001f;
