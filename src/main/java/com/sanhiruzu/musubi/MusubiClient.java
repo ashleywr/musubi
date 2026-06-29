@@ -15,6 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
+import net.neoforged.neoforge.client.model.data.ModelData;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -71,7 +72,7 @@ public class MusubiClient {
             if (item == null || item == Items.AIR) return 0xC8A864;
 
             BakedModel model = mc.getItemRenderer().getModel(new ItemStack(item), null, null, 0);
-            TextureAtlasSprite sprite = model.getParticleIcon();
+            TextureAtlasSprite sprite = model.getParticleIcon(ModelData.EMPTY);
             SpriteContents contents = sprite.contents();
 
             // SpriteContents keeps the source NativeImage between resource reloads.
