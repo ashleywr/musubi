@@ -1,11 +1,12 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "SS",
-    "SS"
+    "SBS",
+    "SBS"
   ],
   "key": {
-    "S": { "item": "minecraft:string" }
+    "S": { "item": "minecraft:string" },
+    "B": { "item": "minecraft:stick" }
   },
   "result": {
     "id": "musubi:silk_thread",
