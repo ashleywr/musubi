@@ -100,6 +100,14 @@ public class SpoolRackBlock extends BaseEntityBlock {
             Player player, net.minecraft.world.InteractionHand hand,
             BlockHitResult hit) {
 
+        // Dump a Tama's bound essence onto the rack.
+        if (stack.getItem() instanceof com.sanhiruzu.musubi.item.TamaItem) {
+            if (level.isClientSide) return ItemInteractionResult.SUCCESS;
+            SpoolRackBlockEntity rack = getBlockEntity(level, pos);
+            if (rack == null) return ItemInteractionResult.FAIL;
+            return dumpTama(stack, state, level, pos, rack);
+        }
+
         if (!(stack.getItem() instanceof SkeinItem)) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
@@ -169,6 +177,40 @@ public class SpoolRackBlock extends BaseEntityBlock {
             if (be != null) be.dropContents(level, pos);
         }
         super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    /**
+     * Dumps a Tama's bound essence into the rack, depositing each type and writing back
+     * any remainder that did not fit. The Tama itself stays in hand.
+     */
+    private ItemInteractionResult dumpTama(
+            ItemStack tama, BlockState state, Level level, BlockPos pos, SpoolRackBlockEntity rack) {
+        com.sanhiruzu.musubi.component.TamaStorage storage =
+            tama.getOrDefault(MusubiDataComponents.TAMA_STORAGE,
+                com.sanhiruzu.musubi.component.TamaStorage.EMPTY);
+        if (storage.isEmpty()) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+
+        java.util.List<SkeinContents.VariantEntry> leftover = new java.util.ArrayList<>();
+        int dumped = 0;
+        for (SkeinContents.VariantEntry e : storage.entries()) {
+            int dep = rack.tryDeposit(e.itemId(), e.count());
+            dumped += dep;
+            if (dep < e.count()) {
+                leftover.add(new SkeinContents.VariantEntry(e.itemId(), e.count() - dep));
+            }
+        }
+
+        if (dumped == 0) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        tama.set(MusubiDataComponents.TAMA_STORAGE,
+            new com.sanhiruzu.musubi.component.TamaStorage(java.util.List.copyOf(leftover)));
+        level.sendBlockUpdated(pos, state, state, 3);
+        level.playSound(null, pos, MusubiSounds.RACK_DEPOSIT.get(), SoundSource.BLOCKS,
+            0.8f, 0.9f + level.random.nextFloat() * 0.2f);
+        return ItemInteractionResult.CONSUME;
     }
 
     @Nullable

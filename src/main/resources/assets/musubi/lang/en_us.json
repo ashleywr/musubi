@@ -7,19 +7,30 @@
   "item.musubi.orihime_tama": "Orihime Tama",
   "item.musubi.skein":           "Silk Skein",
   "item.musubi.fiber_bundle":    "Fiber Bundle",
-  "item.musubi.silk_thread":     "Silk Thread",
-  "item.musubi.silkworm":        "Silkworm",
-  "item.musubi.silkworm_cocoon": "Silkworm Cocoon",
+  "item.musubi.silk_thread":         "Silk Thread",
+  "item.musubi.magical_silk_thread": "Magical Silk Thread",
+  "item.musubi.silkworm":            "Silkworm",
+  "item.musubi.silkworm_cocoon":     "Silkworm Cocoon",
 
   "block.musubi.spinning_wheel": "Spinning Wheel",
   "block.musubi.marudai":        "Marudai",
   "block.musubi.spool_rack":     "Spool Rack",
   "block.musubi.silkworm":       "Silkworm",
 
-  "musubi.tama.tier.0": "Winds by tag — essence of kinship",
-  "musubi.tama.tier.1": "Winds by item — discipline of identity",
-  "musubi.tama.tier.2": "Blends across tags — resonance of relation",
-  "musubi.tama.tier.3": "Winds anything — transcendence of form",
+  "musubi.tama.tier.0": "A humble binding — 4 types, 4,096 items",
+  "musubi.tama.tier.1": "A disciplined binding — 8 types, 16,384 items",
+  "musubi.tama.tier.2": "A resonant binding — 16 types, 65,536 items",
+  "musubi.tama.tier.3": "A boundless binding — anything, unlimited",
+
+  "musubi.tama.filter":      "Filter: %s/%s types",
+  "musubi.tama.stored":      "Holding: %s/%s items",
+  "musubi.tama.entry":       "  %s × %s",
+  "musubi.tama.more":        "  …and %s more",
+  "musubi.tama.taught":      "Now binding: %s",
+  "musubi.tama.forgot":      "No longer binding: %s",
+  "musubi.tama.filter_full": "Filter is full (%s types)",
+  "musubi.tama.swept":       "Wound %s items",
+  "musubi.tama.empty_sweep": "Nothing to wind",
 
   "musubi.marudai.no_racks":       "No spool racks within reach",
   "musubi.marudai.already_winding": "Already winding — wait for it to finish",
@@ -32,7 +43,13 @@
 
   "musubi.jade.spool_rack.empty": "Empty",
 
+  "musubi.magical_silk.charged": "Tama charged",
+
   "musubi.jei.silkworm_boiling":             "Silk Boiling",
   "musubi.jei.silkworm_boiling.fire_hint":   "beneath cauldron",
-  "musubi.jei.silkworm_boiling.fire_tooltip": "Place campfire, fire, or magma block directly beneath the water cauldron"
+  "musubi.jei.silkworm_boiling.fire_tooltip": "Place campfire, fire, or magma block directly beneath the water cauldron",
+
+  "musubi.jei.spinning_wheel_spinning":                "Silk Spinning",
+  "musubi.jei.spinning_wheel_spinning.hint":           "40 ticks per thread",
+  "musubi.jei.spinning_wheel_spinning.hint_tooltip":   "Right-click the Spinning Wheel with Silk Thread to spin it into Magical Silk Thread"
 }

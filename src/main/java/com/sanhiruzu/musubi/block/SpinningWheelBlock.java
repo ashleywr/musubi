@@ -71,7 +71,8 @@ public class SpinningWheelBlock extends BaseEntityBlock {
     }
 
     @Override
-    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(
+    @Nullable
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
             Level level, BlockState state, BlockEntityType<T> type) {
         return level.isClientSide ? null
             : createTickerHelper(type, MusubiBlockEntities.SPINNING_WHEEL.get(),
@@ -91,18 +92,28 @@ public class SpinningWheelBlock extends BaseEntityBlock {
             Player player, net.minecraft.world.InteractionHand hand,
             BlockHitResult hit) {
 
-        if (!stack.is(MusubiItems.SKEIN.get())) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        if (stack.is(MusubiItems.SKEIN.get())) {
+            if (level.isClientSide) return ItemInteractionResult.SUCCESS;
+            SpinningWheelBlockEntity be = getBlockEntity(level, pos);
+            if (be == null) return ItemInteractionResult.FAIL;
+            if (!be.getSkein().isEmpty() || !be.getRawInput().isEmpty()) return ItemInteractionResult.FAIL;
+
+            be.loadSkein(stack.copyWithCount(1), level, pos, state);
+            stack.shrink(1);
+            return ItemInteractionResult.CONSUME;
         }
-        if (level.isClientSide) return ItemInteractionResult.SUCCESS;
 
-        SpinningWheelBlockEntity be = getBlockEntity(level, pos);
-        if (be == null) return ItemInteractionResult.FAIL;
-        if (!be.getSkein().isEmpty()) return ItemInteractionResult.FAIL; // already loaded
+        if (stack.is(MusubiItems.SILK_THREAD.get())) {
+            if (level.isClientSide) return ItemInteractionResult.SUCCESS;
+            SpinningWheelBlockEntity be = getBlockEntity(level, pos);
+            if (be == null) return ItemInteractionResult.FAIL;
+            if (!be.getSkein().isEmpty()) return ItemInteractionResult.FAIL; // skein has priority
 
-        be.loadSkein(stack.copyWithCount(1), level, pos, state);
-        stack.shrink(1);
-        return ItemInteractionResult.CONSUME;
+            be.loadRawInput(stack, level, pos, state);
+            return ItemInteractionResult.CONSUME;
+        }
+
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
@@ -113,13 +124,21 @@ public class SpinningWheelBlock extends BaseEntityBlock {
         if (level.isClientSide) return InteractionResult.SUCCESS;
 
         SpinningWheelBlockEntity be = getBlockEntity(level, pos);
-        if (be == null || be.getSkein().isEmpty()) return InteractionResult.PASS;
+        if (be == null) return InteractionResult.PASS;
 
-        ItemStack retrieved = be.retrieveSkein(level, pos, state);
-        if (!player.getInventory().add(retrieved)) {
-            player.drop(retrieved, false);
+        if (!be.getSkein().isEmpty()) {
+            ItemStack retrieved = be.retrieveSkein(level, pos, state);
+            if (!player.getInventory().add(retrieved)) player.drop(retrieved, false);
+            return InteractionResult.SUCCESS;
         }
-        return InteractionResult.SUCCESS;
+
+        if (!be.getRawInput().isEmpty()) {
+            ItemStack retrieved = be.retrieveRawInput(level, pos, state);
+            if (!player.getInventory().add(retrieved)) player.drop(retrieved, false);
+            return InteractionResult.SUCCESS;
+        }
+
+        return InteractionResult.PASS;
     }
 
     // ── Break behaviour ───────────────────────────────────────────────────────

@@ -23,6 +23,7 @@ public class MusubiCreativeTabs {
                 output.accept(MusubiItems.SILKWORM.get());
                 output.accept(MusubiItems.SILKWORM_COCOON.get());
                 output.accept(MusubiItems.SILK_THREAD.get());
+                output.accept(MusubiItems.MAGICAL_SILK_THREAD.get());
 
                 // Winding tools (tama)
                 output.accept(MusubiItems.BONE_TAMA.get());

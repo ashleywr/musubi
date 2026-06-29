@@ -4,6 +4,12 @@
       { "name": "minecraft:item.armor.equip_leather", "type": "event" }
     ]
   },
+  "tama_bind": {
+    "sounds": [
+      { "name": "minecraft:block.amethyst_block.chime", "type": "event" },
+      { "name": "minecraft:block.amethyst_cluster.step", "type": "event" }
+    ]
+  },
   "rack_deposit": {
     "sounds": [
       { "name": "minecraft:block.wool.place", "type": "event" }

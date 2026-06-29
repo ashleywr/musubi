@@ -16,6 +16,10 @@ public class MusubiSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> NEEDLE_COLLECT =
         register("needle_collect");
 
+    /** Shimmering chime as an item is bound up into silk by the Tama. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> TAMA_BIND =
+        register("tama_bind");
+
     /** Fabric thud when a skein is deposited into the Spool Rack. */
     public static final DeferredHolder<SoundEvent, SoundEvent> RACK_DEPOSIT =
         register("rack_deposit");

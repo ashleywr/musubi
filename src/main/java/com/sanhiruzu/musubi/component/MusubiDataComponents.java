@@ -16,4 +16,18 @@ public class MusubiDataComponents {
             .persistent(SkeinContents.CODEC)
             .networkSynchronized(SkeinContents.STREAM_CODEC)
             .build());
+
+    /** The Tama's learned filter — item types it binds on pickup. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<TamaFilter>> TAMA_FILTER =
+        COMPONENTS.register("tama_filter", () -> DataComponentType.<TamaFilter>builder()
+            .persistent(TamaFilter.CODEC)
+            .networkSynchronized(TamaFilter.STREAM_CODEC)
+            .build());
+
+    /** The bound essence carried inside a single Tama. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<TamaStorage>> TAMA_STORAGE =
+        COMPONENTS.register("tama_storage", () -> DataComponentType.<TamaStorage>builder()
+            .persistent(TamaStorage.CODEC)
+            .networkSynchronized(TamaStorage.STREAM_CODEC)
+            .build());
 }

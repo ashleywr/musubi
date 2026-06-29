@@ -4,7 +4,7 @@ import com.sanhiruzu.musubi.block.MarudaiBlock;
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
 import com.sanhiruzu.musubi.item.MusubiItems;
-import com.sanhiruzu.musubi.item.NeedleItem;
+import com.sanhiruzu.musubi.item.TamaItem;
 import com.sanhiruzu.musubi.item.SkeinItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -66,7 +66,7 @@ public class MarudaiBlockEntity extends BlockEntity {
      *
      * Items are routed immediately to the nearest spool rack that has space, bypassing
      * the skein system entirely (the rack stores raw items by itemId regardless of path).
-     * Skeins, needles, and block items are rejected — those go through manual placement.
+     * Skeins, tama, and block items are rejected — those go through manual placement.
      *
      * Simulate mode properly checks rack availability so hoppers stop pushing when all
      * reachable racks are full for a given item type, rather than silently dropping items.
@@ -85,7 +85,7 @@ public class MarudaiBlockEntity extends BlockEntity {
             if (slot != 0 || stack.isEmpty()) return stack;
             // Reject items that belong to other interaction paths.
             if (stack.getItem() instanceof SkeinItem
-                    || stack.getItem() instanceof NeedleItem
+                    || stack.getItem() instanceof TamaItem
                     || stack.getItem() instanceof BlockItem) return stack;
 
             ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
@@ -111,7 +111,7 @@ public class MarudaiBlockEntity extends BlockEntity {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
             return !(stack.getItem() instanceof SkeinItem)
-                && !(stack.getItem() instanceof NeedleItem)
+                && !(stack.getItem() instanceof TamaItem)
                 && !(stack.getItem() instanceof BlockItem);
         }
     };

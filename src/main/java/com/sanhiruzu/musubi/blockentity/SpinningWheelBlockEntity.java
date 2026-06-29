@@ -3,6 +3,7 @@ package com.sanhiruzu.musubi.blockentity;
 import com.sanhiruzu.musubi.block.SpinningWheelBlock;
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
+import com.sanhiruzu.musubi.item.MusubiItems;
 import com.sanhiruzu.musubi.sound.MusubiSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -29,14 +30,20 @@ import java.util.List;
  * Ticks down every TICKS_PER_EXTRACT server ticks, extracting one batch (up to 64)
  * from the loaded skein and ejecting it as an item entity out the block's front face.
  *
- * When the skein empties the block resets to SPINNING=false and the skein slot clears.
+ * Also processes raw silk thread (1 per RAW_TICKS_PER_ITEM ticks) into magical silk thread.
+ *
+ * When the skein or raw input empties the block resets to SPINNING=false.
  */
 public class SpinningWheelBlockEntity extends BlockEntity {
 
     private static final int TICKS_PER_EXTRACT = 20;
+    private static final int RAW_TICKS_PER_ITEM = 40;
 
     private ItemStack skein = ItemStack.EMPTY;
     private int tickTimer = TICKS_PER_EXTRACT;
+
+    private ItemStack rawInput = ItemStack.EMPTY;
+    private int rawTickTimer = RAW_TICKS_PER_ITEM;
 
     public SpinningWheelBlockEntity(BlockPos pos, BlockState state) {
         super(MusubiBlockEntities.SPINNING_WHEEL.get(), pos, state);
@@ -45,13 +52,22 @@ public class SpinningWheelBlockEntity extends BlockEntity {
     // ── Tick ─────────────────────────────────────────────────────────────────
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, SpinningWheelBlockEntity be) {
-        if (be.skein.isEmpty()) return;
+        if (!be.skein.isEmpty()) {
+            be.tickTimer--;
+            if (be.tickTimer <= 0) {
+                be.tickTimer = TICKS_PER_EXTRACT;
+                be.extractBatch(level, pos, state);
+            }
+            return;
+        }
 
-        be.tickTimer--;
-        if (be.tickTimer > 0) return;
-        be.tickTimer = TICKS_PER_EXTRACT;
-
-        be.extractBatch(level, pos, state);
+        if (!be.rawInput.isEmpty()) {
+            be.rawTickTimer--;
+            if (be.rawTickTimer <= 0) {
+                be.rawTickTimer = RAW_TICKS_PER_ITEM;
+                be.processRawSilk(level, pos, state);
+            }
+        }
     }
 
     private void extractBatch(Level level, BlockPos pos, BlockState state) {
@@ -115,10 +131,27 @@ public class SpinningWheelBlockEntity extends BlockEntity {
         setChanged();
     }
 
+    private void processRawSilk(Level level, BlockPos pos, BlockState state) {
+        rawInput.shrink(1);
+        ejectItem(level, pos, state, new ItemStack(MusubiItems.MAGICAL_SILK_THREAD.get(), 1));
+        if (rawInput.isEmpty()) {
+            rawInput = ItemStack.EMPTY;
+            level.setBlock(pos, state.setValue(SpinningWheelBlock.SPINNING, false), 3);
+        }
+        setChanged();
+        level.sendBlockUpdated(pos, state, state, 3);
+        level.playSound(null, pos, MusubiSounds.WHEEL_SPIN.get(), SoundSource.BLOCKS,
+            0.6f, 1.1f + level.random.nextFloat() * 0.2f);
+    }
+
     // ── API used by SpinningWheelBlock ────────────────────────────────────────
 
     public ItemStack getSkein() {
         return skein;
+    }
+
+    public ItemStack getRawInput() {
+        return rawInput;
     }
 
     public void loadSkein(ItemStack stack, Level level, BlockPos pos, BlockState state) {
@@ -138,15 +171,46 @@ public class SpinningWheelBlockEntity extends BlockEntity {
         return retrieved;
     }
 
+    public void loadRawInput(ItemStack stack, Level level, BlockPos pos, BlockState state) {
+        if (rawInput.isEmpty()) {
+            rawInput = stack.copy();
+            stack.setCount(0);
+        } else if (ItemStack.isSameItem(rawInput, stack)) {
+            int space = rawInput.getMaxStackSize() - rawInput.getCount();
+            int toAdd = Math.min(space, stack.getCount());
+            if (toAdd > 0) {
+                rawInput.grow(toAdd);
+                stack.shrink(toAdd);
+            }
+        }
+        if (!rawInput.isEmpty()) {
+            rawTickTimer = RAW_TICKS_PER_ITEM;
+            level.setBlock(pos, state.setValue(SpinningWheelBlock.SPINNING, true), 3);
+            setChanged();
+            level.sendBlockUpdated(pos, state, state, 3);
+            level.playSound(null, pos, MusubiSounds.WHEEL_LOAD.get(), SoundSource.BLOCKS, 0.9f, 1.0f);
+        }
+    }
+
+    public ItemStack retrieveRawInput(Level level, BlockPos pos, BlockState state) {
+        ItemStack retrieved = rawInput;
+        rawInput = ItemStack.EMPTY;
+        level.setBlock(pos, state.setValue(SpinningWheelBlock.SPINNING, false), 3);
+        setChanged();
+        return retrieved;
+    }
+
     public void dropSkein(Level level, BlockPos pos) {
-        if (skein.isEmpty()) return;
-        ItemEntity entity = new ItemEntity(
-            level,
-            pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-            skein
-        );
-        level.addFreshEntity(entity);
-        skein = ItemStack.EMPTY;
+        if (!skein.isEmpty()) {
+            level.addFreshEntity(new ItemEntity(
+                level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, skein));
+            skein = ItemStack.EMPTY;
+        }
+        if (!rawInput.isEmpty()) {
+            level.addFreshEntity(new ItemEntity(
+                level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, rawInput));
+            rawInput = ItemStack.EMPTY;
+        }
     }
 
     // ── Persistence ───────────────────────────────────────────────────────────
@@ -158,6 +222,10 @@ public class SpinningWheelBlockEntity extends BlockEntity {
             tag.put("skein", skein.save(registries));
         }
         tag.putInt("tick_timer", tickTimer);
+        if (!rawInput.isEmpty()) {
+            tag.put("raw_input", rawInput.save(registries));
+        }
+        tag.putInt("raw_tick_timer", rawTickTimer);
     }
 
     @Override
@@ -167,6 +235,10 @@ public class SpinningWheelBlockEntity extends BlockEntity {
             ? ItemStack.parseOptional(registries, tag.getCompound("skein"))
             : ItemStack.EMPTY;
         tickTimer = tag.contains("tick_timer") ? tag.getInt("tick_timer") : TICKS_PER_EXTRACT;
+        rawInput = tag.contains("raw_input")
+            ? ItemStack.parseOptional(registries, tag.getCompound("raw_input"))
+            : ItemStack.EMPTY;
+        rawTickTimer = tag.contains("raw_tick_timer") ? tag.getInt("raw_tick_timer") : RAW_TICKS_PER_ITEM;
     }
 
     // ── Sync ─────────────────────────────────────────────────────────────────

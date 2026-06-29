@@ -1,0 +1,71 @@
+{
+  "__comment": "Shared 3D geometry for all tama tiers — a weighted kumihimo bobbin. Tier models set #tex. Open tama.bbmodel to edit.",
+  "parent": "minecraft:block/block",
+  "textures": {
+    "tex": "musubi:item/bone_tama",
+    "particle": "musubi:item/bone_tama"
+  },
+  "display": {
+    "gui":                     { "rotation": [25, 45, 0],  "translation": [0, 0, 0],   "scale": [0.9, 0.9, 0.9] },
+    "ground":                  { "rotation": [0, 0, 0],    "translation": [0, 2, 0],   "scale": [0.5, 0.5, 0.5] },
+    "fixed":                   { "rotation": [0, 90, 0],   "translation": [0, 0, 0],   "scale": [0.9, 0.9, 0.9] },
+    "thirdperson_righthand":   { "rotation": [0, 0, 0],    "translation": [0, 3, 1],   "scale": [0.55, 0.55, 0.55] },
+    "thirdperson_lefthand":    { "rotation": [0, 0, 0],    "translation": [0, 3, 1],   "scale": [0.55, 0.55, 0.55] },
+    "firstperson_righthand":   { "rotation": [0, 45, 0],   "translation": [0, 2, 0],   "scale": [0.6, 0.6, 0.6] },
+    "firstperson_lefthand":    { "rotation": [0, 45, 0],   "translation": [0, 2, 0],   "scale": [0.6, 0.6, 0.6] }
+  },
+  "elements": [
+    {
+      "name": "flange_bottom",
+      "from": [5, 2, 5],
+      "to": [11, 3, 11],
+      "faces": {
+        "north": { "uv": [0, 6, 6, 7], "texture": "#tex" },
+        "south": { "uv": [0, 6, 6, 7], "texture": "#tex" },
+        "east":  { "uv": [0, 6, 6, 7], "texture": "#tex" },
+        "west":  { "uv": [0, 6, 6, 7], "texture": "#tex" },
+        "up":    { "uv": [0, 0, 6, 6], "texture": "#tex" },
+        "down":  { "uv": [0, 0, 6, 6], "texture": "#tex" }
+      }
+    },
+    {
+      "name": "flange_top",
+      "from": [5, 11, 5],
+      "to": [11, 12, 11],
+      "faces": {
+        "north": { "uv": [0, 6, 6, 7], "texture": "#tex" },
+        "south": { "uv": [0, 6, 6, 7], "texture": "#tex" },
+        "east":  { "uv": [0, 6, 6, 7], "texture": "#tex" },
+        "west":  { "uv": [0, 6, 6, 7], "texture": "#tex" },
+        "up":    { "uv": [0, 0, 6, 6], "texture": "#tex" },
+        "down":  { "uv": [0, 0, 6, 6], "texture": "#tex" }
+      }
+    },
+    {
+      "name": "core",
+      "from": [6, 3, 6],
+      "to": [10, 11, 10],
+      "faces": {
+        "north": { "uv": [8, 0, 12, 8],  "texture": "#tex" },
+        "south": { "uv": [8, 0, 12, 8],  "texture": "#tex" },
+        "east":  { "uv": [8, 0, 12, 8],  "texture": "#tex" },
+        "west":  { "uv": [8, 0, 12, 8],  "texture": "#tex" },
+        "up":    { "uv": [8, 8, 12, 12], "texture": "#tex" },
+        "down":  { "uv": [8, 8, 12, 12], "texture": "#tex" }
+      }
+    },
+    {
+      "name": "shaft",
+      "from": [7, 12, 7],
+      "to": [9, 15, 9],
+      "faces": {
+        "north": { "uv": [0, 8, 2, 11], "texture": "#tex" },
+        "south": { "uv": [0, 8, 2, 11], "texture": "#tex" },
+        "east":  { "uv": [0, 8, 2, 11], "texture": "#tex" },
+        "west":  { "uv": [0, 8, 2, 11], "texture": "#tex" },
+        "up":    { "uv": [2, 8, 4, 10], "texture": "#tex" },
+        "down":  { "uv": [2, 8, 4, 10], "texture": "#tex" }
+      }
+    }
+  ]
+}

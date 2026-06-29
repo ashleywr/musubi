@@ -36,6 +36,9 @@ public class MusubiItems {
     public static final DeferredHolder<Item, Item> SILK_THREAD =
         ITEMS.register("silk_thread", () -> new Item(new Item.Properties().stacksTo(64)));
 
+    public static final DeferredHolder<Item, MagicalSilkThreadItem> MAGICAL_SILK_THREAD =
+        ITEMS.register("magical_silk_thread", () -> new MagicalSilkThreadItem(new Item.Properties().stacksTo(64)));
+
     public static final DeferredHolder<Item, SilkwormItem> SILKWORM =
         ITEMS.register("silkworm", () -> new SilkwormItem(new Item.Properties().stacksTo(16)));
 

@@ -57,6 +57,7 @@ public class Musubi {
     }
 
     private static void commonSetup(FMLCommonSetupEvent event) {
+        event.enqueueWork(com.sanhiruzu.musubi.curio.MusubiCurios::register);
         event.enqueueWork(() ->
             CauldronInteraction.WATER.map().put(MusubiItems.SILKWORM_COCOON.get(),
                 (state, level, pos, player, hand, stack) -> {
