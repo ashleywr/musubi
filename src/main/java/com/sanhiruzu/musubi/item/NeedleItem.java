@@ -5,6 +5,8 @@ import com.sanhiruzu.musubi.component.SkeinContents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -23,7 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The needle — lives in a Curios slot, never occupies inventory.
+ * The needle — held in the main hand to sew items in the off-hand into skeins.
  *
  * tier controls how group_key is computed at sewing time:
  *   0 = bone    → broadest matching tag  (e.g. #minecraft:logs)
@@ -31,61 +33,31 @@ import java.util.Optional;
  *   2 = silver  → cross-tag blend        (TBD — mid-game gate)
  *   3 = orihime → anything               (Eternal Starlight gate)
  *
- * Sewing uses a two-phase hold mechanic on the item in the main hand:
- *   Phase 1 (ticks 0–29): startup animation, free cancel at any point.
- *   Phase 2 (tick 30+):   drains off-hand stack into the matching skein.
- *                         One charge is consumed at Phase 2 entry.
- *                         Releasing early leaves a partial skein in inventory.
- *
- * The off-hand is the drain target: hold items to sew in the off-hand, needle in
- * the main hand. Each DRAIN_INTERVAL ticks, one item is moved from the off-hand
- * into a SkeinContents variant list in the matching skein in inventory.
+ * Sewing uses a two-phase hold mechanic:
+ *   Phase 1 (ticks 0–29): startup animation, free cancel at any point, no durability spent.
+ *   Phase 2 (tick 30+):   drains the off-hand stack into a skein; 1 durability consumed
+ *                         at Phase 2 entry. Releasing early leaves a partial skein.
  */
 public class NeedleItem extends Item {
 
     /** Ticks of startup before drain begins (1.5 s at 20 t/s). */
     public static final int STARTUP_TICKS = 30;
-    /** Ticks between each drained item (5 items/second base rate). */
+    /** Ticks between each drained item (~5 items/second base rate). */
     private static final int DRAIN_INTERVAL = 4;
 
     public final int tier;
-    public final int maxCharges;
 
-    public NeedleItem(int tier, int maxCharges, Properties properties) {
+    public NeedleItem(int tier, Properties properties) {
         super(properties);
         this.tier = tier;
-        this.maxCharges = maxCharges;
-    }
-
-    // ── Charge helpers ────────────────────────────────────────────────────────
-
-    public int getCharges(ItemStack stack) {
-        return stack.getOrDefault(MusubiDataComponents.NEEDLE_CHARGES, maxCharges);
-    }
-
-    public void setCharges(ItemStack stack, int charges) {
-        stack.set(MusubiDataComponents.NEEDLE_CHARGES, Math.max(0, Math.min(charges, maxCharges)));
-    }
-
-    public void consumeCharge(ItemStack stack) {
-        setCharges(stack, getCharges(stack) - 1);
-    }
-
-    public boolean hasCharges(ItemStack stack) {
-        return getCharges(stack) > 0;
     }
 
     // ── Use mechanic ──────────────────────────────────────────────────────────
 
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
-        if (!hasCharges(stack)) {
-            player.displayClientMessage(Component.translatable("musubi.needle.no_charges"), true);
-            return InteractionResultHolder.fail(stack);
-        }
         player.startUsingItem(hand);
-        return InteractionResultHolder.consume(stack);
+        return InteractionResultHolder.consume(player.getItemInHand(hand));
     }
 
     @Override
@@ -106,21 +78,21 @@ public class NeedleItem extends Item {
         int ticksHeld = getUseDuration(stack, entity) - remainingUseTicks;
 
         if (ticksHeld == STARTUP_TICKS) {
-            // Phase 2 entry: verify off-hand has items, then lock in the skein.
+            // Phase 2 entry: verify off-hand has items, spend 1 durability, lock in skein.
             ItemStack offhand = player.getOffhandItem();
             if (offhand.isEmpty()) {
                 player.stopUsingItem();
                 return;
             }
-            consumeCharge(stack);
             String groupKey = computeGroupKey(offhand);
-            ensureSkein(player, groupKey, offhand);
+            ensureSkein(player, groupKey);
+            stack.hurtAndBreak(1, (ServerLevel) level,
+                player instanceof ServerPlayer sp ? sp : null, item -> {});
 
         } else if (ticksHeld > STARTUP_TICKS && (ticksHeld - STARTUP_TICKS) % DRAIN_INTERVAL == 0) {
             // Phase 2 drain tick: move one off-hand item into the skein.
             ItemStack offhand = player.getOffhandItem();
             if (offhand.isEmpty()) {
-                // Off-hand exhausted — stop naturally; partial skein stays.
                 player.stopUsingItem();
                 return;
             }
@@ -133,7 +105,7 @@ public class NeedleItem extends Item {
     public void releaseUsing(ItemStack stack, Level level, LivingEntity entity, int timeCharged) {
         int ticksHeld = getUseDuration(stack, entity) - timeCharged;
         if (ticksHeld < STARTUP_TICKS) {
-            // Released during Phase 1 — free cancel; charges untouched, no skein created.
+            // Released during Phase 1 — free cancel; no durability spent, no skein created.
             return;
         }
         // Released during Phase 2 — partial skein already in inventory; nothing to finalize.
@@ -143,12 +115,7 @@ public class NeedleItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> lines, TooltipFlag flag) {
-        int charges = getCharges(stack);
-        if (charges > 0) {
-            lines.add(Component.translatable("musubi.needle.charges", charges));
-        } else {
-            lines.add(Component.translatable("musubi.needle.no_charges"));
-        }
+        lines.add(Component.translatable("musubi.needle.tier." + tier));
     }
 
     // ── Sewing helpers ────────────────────────────────────────────────────────
@@ -180,7 +147,7 @@ public class NeedleItem extends Item {
      * Finds or creates a matching skein (same tier + groupKey) in the player's main inventory.
      * Drops the new skein at the player's position if inventory is full.
      */
-    private void ensureSkein(Player player, String groupKey, ItemStack sample) {
+    private void ensureSkein(Player player, String groupKey) {
         if (findMatchingSkein(player, groupKey) != null) return;
 
         int color = colorFromGroupKey(groupKey);
@@ -262,7 +229,4 @@ public class NeedleItem extends Item {
         int b = Math.max(0x40,  h          & 0xFF);
         return (r << 16) | (g << 8) | b;
     }
-
-    // TODO: Curios slot registration (ICapabilityProvider via modEventBus)
-    // TODO: complexity scoring for drain rate and skein capacity budget
 }

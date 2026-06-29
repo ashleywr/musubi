@@ -12,9 +12,11 @@
   "block.musubi.marudai":        "Marudai",
   "block.musubi.spool_rack":     "Spool Rack",
 
-  "musubi.needle.charges":      "%s charges remaining",
-  "musubi.needle.no_charges":   "No charges — use a Fiber Bundle to restore",
-  "musubi.needle.recharging":   "Recharging…",
+  "musubi.needle.tier.0": "Groups by tag — essence of kinship",
+  "musubi.needle.tier.1": "Groups by item — discipline of identity",
+  "musubi.needle.tier.2": "Blends across tags — resonance of relation",
+  "musubi.needle.tier.3": "Sews anything — transcendence of form",
+
   "musubi.skein.contents_tag":  "%s — %s items",
   "musubi.skein.contents_item": "%s × %s",
   "musubi.skein.empty":         "Empty skein",
