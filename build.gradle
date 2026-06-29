@@ -81,6 +81,9 @@ dependencies {
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 
+    // Jade — optional tooltip integration. Sourced from modpack runtime.
+    compileOnly files('C:/WorkDir/synesthesia/.runtime/mods/Jade-1.21.1-NeoForge-15.10.5.jar')
+
     // Sophisticated Backpacks — optional integration for auto-thread backpack upgrade.
     // Uncomment once the SB maven coordinate is confirmed.
     // compileOnly "curse.maven:sophisticated-backpacks-422301:${sophback_version}"

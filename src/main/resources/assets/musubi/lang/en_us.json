@@ -25,5 +25,7 @@
   "musubi.skein.contents_item": "%s × %s",
   "musubi.skein.empty":         "Empty skein",
   "musubi.sewing.rejected":     "The needle cannot read compound items",
-  "musubi.sewing.no_silk":      "Sewing requires silk thread"
+  "musubi.sewing.no_silk":      "Sewing requires silk thread",
+
+  "musubi.jade.spool_rack.empty": "Empty"
 }
