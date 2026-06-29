@@ -142,6 +142,24 @@ public class SpoolRackBlock extends BaseEntityBlock {
         return InteractionResult.SUCCESS;
     }
 
+    // ── Comparator output ─────────────────────────────────────────────────────
+
+    @Override
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getAnalogOutputSignal(BlockState state, net.minecraft.world.level.Level level, BlockPos pos) {
+        SpoolRackBlockEntity be = getBlockEntity(level, pos);
+        if (be == null) return 0;
+        int total = 0;
+        for (int i = 0; i < SpoolRackBlockEntity.SLOTS; i++) total += be.getSlotCount(i);
+        if (total == 0) return 0;
+        int maxTotal = SpoolRackBlockEntity.SLOTS * SpoolRackBlockEntity.SLOT_CAPACITY;
+        return 1 + (int) (total / (float) maxTotal * 14);
+    }
+
     // ── Break behaviour ───────────────────────────────────────────────────────
 
     @Override
