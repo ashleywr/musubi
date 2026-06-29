@@ -5,6 +5,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -18,7 +20,15 @@ public class MusubiBlocks {
     public static final DeferredRegister<Item> BLOCK_ITEMS =
         DeferredRegister.create(Registries.ITEM, Musubi.MOD_ID);
 
-    // Blocks registered once designs are finalised:
+    public static final DeferredHolder<Block, SpoolRackBlock> SPOOL_RACK =
+        register("spool_rack", () -> new SpoolRackBlock(
+            BlockBehaviour.Properties.of()
+                .strength(1.5f, 6.0f)
+                .sound(SoundType.WOOD)
+                .noOcclusion()
+        ));
+
+    // Pending block implementations:
     //
     // public static final DeferredHolder<Block, SpinningWheelBlock> SPINNING_WHEEL =
     //     register("spinning_wheel", () -> new SpinningWheelBlock(...));
@@ -26,11 +36,7 @@ public class MusubiBlocks {
     //
     // public static final DeferredHolder<Block, MarudaiBlock> MARUDAI =
     //     register("marudai", () -> new MarudaiBlock(...));
-    //     Role: skeins in → separates by item variant → winds onto adjacent spool rack.
-    //
-    // public static final DeferredHolder<Block, SpoolRackBlock> SPOOL_RACK =
-    //     register("spool_rack", () -> new SpoolRackBlock(...));
-    //     Role: stores wound thread per-item slot; right-click to retrieve as real items.
+    //     Role: right-click with skein → winds contents onto adjacent spool racks.
 
     private static <T extends Block> DeferredHolder<Block, T> register(String name, Supplier<T> block) {
         DeferredHolder<Block, T> holder = BLOCKS.register(name, block);
