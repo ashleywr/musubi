@@ -1,0 +1,8 @@
+{
+  "parent": "musubi:item/tama_4",
+  "textures": {
+    "tex": "musubi:item/silver_tama",
+    "particle": "musubi:item/silver_tama",
+    "strand": "musubi:item/silk_strand"
+  }
+}

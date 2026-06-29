@@ -99,11 +99,15 @@ public final class MusubiCurios {
     private static void spawnAmbientSilk(LivingEntity wearer, ItemStack tama) {
         Level level = wearer.level();
         RandomSource rnd = level.random;
-        // A fuller tama sheds a touch more silk; an empty one only the occasional wisp.
-        boolean empty = tama.getOrDefault(
-            com.sanhiruzu.musubi.component.MusubiDataComponents.TAMA_STORAGE,
-            com.sanhiruzu.musubi.component.TamaStorage.EMPTY).isEmpty();
-        float chance = empty ? 0.20f : 0.45f;
+        // Wisp density scales with how full the tama is: a near-empty one sheds the odd wisp,
+        // a near-full one trails noticeably more silk.
+        TamaStorage storage = tama.getOrDefault(MusubiDataComponents.TAMA_STORAGE, TamaStorage.EMPTY);
+        float fill = 0f;
+        if (tama.getItem() instanceof TamaItem t && t.storageCapacity() > 0) {
+            fill = Math.min(1f, storage.total() / (float) t.storageCapacity());
+        }
+        // 0.15 when empty → ~0.6 when full.
+        float chance = 0.15f + 0.45f * fill;
         if (rnd.nextFloat() > chance) return;
 
         int color = TamaItem.contentColor(tama);
@@ -113,7 +117,8 @@ public final class MusubiCurios {
             ( color        & 0xFF) / 255f);
         DustParticleOptions dust = new DustParticleOptions(rgb, 0.7f);
 
-        int motes = empty ? 1 : 1 + (rnd.nextFloat() < 0.4f ? 1 : 0);
+        // 1 mote normally; a third more likely as it fills toward capacity.
+        int motes = 1 + (rnd.nextFloat() < 0.25f + 0.4f * fill ? 1 : 0);
         Vec3 motion = wearer.getDeltaMovement();
         for (int i = 0; i < motes; i++) {
             double angle = rnd.nextDouble() * Math.PI * 2.0;

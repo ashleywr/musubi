@@ -16,6 +16,20 @@
   "block.musubi.marudai":        "Marudai",
   "block.musubi.spool_rack":     "Spool Rack",
   "block.musubi.silkworm":       "Silkworm",
+  "block.musubi.shrine_stone":   "Shrine Stone",
+  "block.musubi.itomaki":        "Itomaki",
+  "block.musubi.donation_box":   "Saisen-bako",
+
+  "item.musubi.gohei":           "Gohei",
+  "item.musubi.shimenawa":       "Shimenawa",
+
+  "block.musubi.shinboku":       "Shinboku",
+
+  "musubi.shrine_stone.rei": "%s / %s REI",
+
+  "musubi.donation_box.offered":          "+%s REI offered",
+  "musubi.donation_box.bow_first":        "You bow your head...",
+  "musubi.donation_box.ritual_complete":  "Your prayer is heard.",
 
   "musubi.tama.tier.0": "A humble binding — 4 types, 4,096 items",
   "musubi.tama.tier.1": "A disciplined binding — 8 types, 16,384 items",
@@ -37,6 +51,7 @@
   "musubi.tama.help_key":    "Or press the Attune Tama key with an item in hand",
   "musubi.tama.attune_none": "Hold an item to attune",
   "musubi.tama.no_tama":     "No Tama to attune",
+  "musubi.tama.hud":         "Tama  %s / %s",
 
   "key.categories.musubi":   "Musubi",
   "key.musubi.attune":       "Attune Tama",

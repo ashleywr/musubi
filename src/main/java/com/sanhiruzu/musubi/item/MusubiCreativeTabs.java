@@ -39,6 +39,11 @@ public class MusubiCreativeTabs {
                 output.accept(MusubiBlocks.SPOOL_RACK.get());
                 output.accept(MusubiBlocks.MARUDAI.get());
                 output.accept(MusubiBlocks.SPINNING_WHEEL.get());
+                output.accept(MusubiBlocks.SHRINE_STONE.get());
+                output.accept(MusubiBlocks.ITOMAKI.get());
+                output.accept(MusubiBlocks.DONATION_BOX.get());
+                output.accept(MusubiItems.GOHEI.get());
+                output.accept(MusubiItems.SHIMENAWA.get());
             })
             .build());
 }

@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "musubi:block/shrine_stone" }
+  }
+}

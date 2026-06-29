@@ -2,6 +2,33 @@
   "parent": "musubi:item/tama",
   "textures": {
     "tex": "musubi:item/bone_tama",
-    "particle": "musubi:item/bone_tama"
-  }
+    "particle": "musubi:item/bone_tama",
+    "strand": "musubi:item/silk_strand"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "musubi:strands": 1
+      },
+      "model": "musubi:item/bone_tama_1"
+    },
+    {
+      "predicate": {
+        "musubi:strands": 2
+      },
+      "model": "musubi:item/bone_tama_2"
+    },
+    {
+      "predicate": {
+        "musubi:strands": 3
+      },
+      "model": "musubi:item/bone_tama_3"
+    },
+    {
+      "predicate": {
+        "musubi:strands": 4
+      },
+      "model": "musubi:item/bone_tama_4"
+    }
+  ]
 }

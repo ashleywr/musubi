@@ -85,6 +85,14 @@ public class SpoolRackBlockEntity extends BlockEntity {
         return false;
     }
 
+    /** Returns the slot index that already holds {@code itemId}, or -1. */
+    public int getSlotForItem(ResourceLocation itemId) {
+        for (int i = 0; i < SLOTS; i++) {
+            if (itemId.equals(itemIds[i])) return i;
+        }
+        return -1;
+    }
+
     /**
      * Public entry-point for the Marudai to deposit individual items one at a time.
      * Returns the number actually deposited (0 if no space).

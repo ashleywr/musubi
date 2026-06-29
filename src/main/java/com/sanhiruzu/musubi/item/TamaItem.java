@@ -181,14 +181,15 @@ public class TamaItem extends Item {
     public static void attuneFromKey(Player player) {
         if (player.level().isClientSide) return;
         ItemStack tama = findActiveTama(player);
-        if (tama == null) {
-            player.displayClientMessage(Component.translatable("musubi.tama.no_tama"), true);
-            return;
-        }
-        attune(player, tama, sampleFor(player, tama));
+        if (tama == null) return; // nothing to do; the key also just "peeks" at the HUD client-side
+        ItemStack sample = sampleFor(player, tama);
+        // Peek-only press (no valid sample) — stay silent so checking fullness isn't naggy.
+        if (sample.isEmpty() || sample.getItem() instanceof TamaItem) return;
+        attune(player, tama, sample);
     }
 
-    private static ItemStack findActiveTama(Player player) {
+    /** The player's active tama: worn belt first, then a held tama, then the first in the inventory. */
+    public static ItemStack findActiveTama(Player player) {
         ItemStack worn = com.sanhiruzu.musubi.curio.MusubiCurios.findWornTama(player);
         if (worn != null) return worn;
         if (player.getMainHandItem().getItem() instanceof TamaItem) return player.getMainHandItem();

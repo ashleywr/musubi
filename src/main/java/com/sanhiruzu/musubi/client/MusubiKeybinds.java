@@ -21,7 +21,8 @@ public final class MusubiKeybinds {
 
     public static void onClientTick(ClientTickEvent.Post event) {
         while (ATTUNE.consumeClick()) {
-            PacketDistributor.sendToServer(new AttuneKeyPayload());
+            TamaHudOverlay.peek();                       // flash the fill bar (client)
+            PacketDistributor.sendToServer(new AttuneKeyPayload());  // attune if a sample is held
         }
     }
 }

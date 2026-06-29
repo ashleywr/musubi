@@ -54,6 +54,7 @@ public class Musubi {
             modEventBus.addListener(MusubiClient::registerItemColors);
             modEventBus.addListener(MusubiClient::registerRenderers);
             modEventBus.addListener(MusubiClient::registerAdditionalModels);
+            modEventBus.addListener(MusubiClient::registerGuiLayers);
             modEventBus.addListener(com.sanhiruzu.musubi.client.MusubiKeybinds::register);
         }
     }

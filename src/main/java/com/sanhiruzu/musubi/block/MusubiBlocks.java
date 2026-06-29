@@ -44,6 +44,38 @@ public class MusubiBlocks {
                 .noOcclusion()
         ));
 
+    public static final DeferredHolder<Block, ShrineStoneBlock> SHRINE_STONE =
+        register("shrine_stone", () -> new ShrineStoneBlock(
+            BlockBehaviour.Properties.of()
+                .strength(3.0f, 12.0f)
+                .sound(SoundType.STONE)
+                .lightLevel(state -> 4)
+        ));
+
+    public static final DeferredHolder<Block, ItomakiBlock> ITOMAKI =
+        register("itomaki", () -> new ItomakiBlock(
+            BlockBehaviour.Properties.of()
+                .strength(2.0f, 6.0f)
+                .sound(SoundType.WOOD)
+                .noOcclusion()
+        ));
+
+    public static final DeferredHolder<Block, DonationBoxBlock> DONATION_BOX =
+        register("donation_box", () -> new DonationBoxBlock(
+            BlockBehaviour.Properties.of()
+                .strength(2.5f, 8.0f)
+                .sound(SoundType.WOOD)
+        ));
+
+    /** Placed only via ShimenawaItem — no standalone BlockItem. */
+    public static final DeferredHolder<Block, ShinbokuBlock> SHINBOKU =
+        registerNoItem("shinboku", () -> new ShinbokuBlock(
+            BlockBehaviour.Properties.of()
+                .strength(3.0f, 9.0f)
+                .sound(SoundType.WOOD)
+                .lightLevel(state -> 3)
+        ));
+
     /** Placed only via SilkwormItem — no BlockItem. */
     public static final DeferredHolder<Block, SilkwormBlock> SILKWORM =
         registerNoItem("silkworm", () -> new SilkwormBlock(

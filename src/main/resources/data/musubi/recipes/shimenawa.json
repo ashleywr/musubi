@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "WWW",
+    "WPW",
+    "WWW"
+  ],
+  "key": {
+    "W": { "item": "minecraft:wheat" },
+    "P": { "item": "minecraft:paper" }
+  },
+  "result": {
+    "id": "musubi:shimenawa",
+    "count": 1
+  }
+}

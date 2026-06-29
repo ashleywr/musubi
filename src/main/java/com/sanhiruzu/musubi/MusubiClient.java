@@ -34,6 +34,23 @@ public class MusubiClient {
     public static void init(FMLClientSetupEvent event) {
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
             com.sanhiruzu.musubi.client.MusubiKeybinds::onClientTick);
+
+        event.enqueueWork(MusubiClient::registerTamaStrandProperty);
+    }
+
+    /** Drives the {@code musubi:strands} model property = number of distinct stored types (0–4),
+     *  which selects how many strand sub-models the Tama shows. */
+    private static void registerTamaStrandProperty() {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(Musubi.MOD_ID, "strands");
+        net.minecraft.client.renderer.item.ClampedItemPropertyFunction fn =
+            (stack, level, entity, seed) -> Math.min(4,
+                stack.getOrDefault(MusubiDataComponents.TAMA_STORAGE,
+                    com.sanhiruzu.musubi.component.TamaStorage.EMPTY).distinctTypes());
+        for (var holder : java.util.List.of(
+                MusubiItems.BONE_TAMA, MusubiItems.IRON_TAMA,
+                MusubiItems.SILVER_TAMA, MusubiItems.ORIHIME_TAMA)) {
+            net.minecraft.client.renderer.item.ItemProperties.register(holder.get(), id, fn);
+        }
     }
 
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
@@ -45,6 +62,12 @@ public class MusubiClient {
      *  so it must be registered as a standalone model to get baked. */
     public static void registerAdditionalModels(ModelEvent.RegisterAdditional event) {
         event.register(SpinningWheelBER.WHEEL_MODEL);
+    }
+
+    public static void registerGuiLayers(net.neoforged.neoforge.client.event.RegisterGuiLayersEvent event) {
+        event.registerAboveAll(
+            ResourceLocation.fromNamespaceAndPath(Musubi.MOD_ID, "tama_fill"),
+            com.sanhiruzu.musubi.client.TamaHudOverlay::render);
     }
 
     public static void registerItemColors(RegisterColorHandlersEvent.Item event) {
@@ -66,6 +89,20 @@ public class MusubiClient {
             if (tintIndex == 1) return rainbowColor();
             return -1;
         }, MusubiItems.SILK_THREAD.get());
+
+        // Tama — each wound strand (tintindex 1..4) takes the colour of the matching stored type;
+        // the bobbin body (tintindex -1) is left untinted.
+        net.minecraft.client.color.item.ItemColor tamaColors = (stack, tintIndex) -> {
+            if (tintIndex <= 0) return -1;
+            var storage = stack.getOrDefault(MusubiDataComponents.TAMA_STORAGE,
+                com.sanhiruzu.musubi.component.TamaStorage.EMPTY);
+            int i = tintIndex - 1;
+            if (i >= storage.entries().size()) return -1;
+            return getDominantColor(storage.entries().get(i).itemId()) | 0xFF000000;
+        };
+        event.register(tamaColors,
+            MusubiItems.BONE_TAMA.get(), MusubiItems.IRON_TAMA.get(),
+            MusubiItems.SILVER_TAMA.get(), MusubiItems.ORIHIME_TAMA.get());
     }
 
     // ── Rainbow ───────────────────────────────────────────────────────────────
