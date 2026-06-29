@@ -13,7 +13,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import com.sanhiruzu.musubi.blockentity.MusubiBlockEntities;
+import com.sanhiruzu.musubi.client.render.SpoolRackBER;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
@@ -27,6 +30,10 @@ public class MusubiClient {
     private static final Map<ResourceLocation, Integer> ITEM_COLOR_CACHE = new HashMap<>();
 
     public static void init(FMLClientSetupEvent event) {
+    }
+
+    public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(MusubiBlockEntities.SPOOL_RACK.get(), SpoolRackBER::new);
     }
 
     public static void registerItemColors(RegisterColorHandlersEvent.Item event) {
@@ -61,7 +68,7 @@ public class MusubiClient {
 
     // ── Dominant color from item texture ──────────────────────────────────────
 
-    private static int getDominantColor(ResourceLocation itemId) {
+    public static int getDominantColor(ResourceLocation itemId) {
         return ITEM_COLOR_CACHE.computeIfAbsent(itemId, MusubiClient::computeDominantColor);
     }
 
