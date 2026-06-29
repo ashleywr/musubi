@@ -17,6 +17,9 @@
   "musubi.needle.tier.2": "Blends across tags — resonance of relation",
   "musubi.needle.tier.3": "Sews anything — transcendence of form",
 
+  "musubi.marudai.no_racks":       "No spool racks within reach",
+  "musubi.marudai.already_winding": "Already winding — wait for it to finish",
+
   "musubi.skein.contents_tag":  "%s — %s items",
   "musubi.skein.contents_item": "%s × %s",
   "musubi.skein.empty":         "Empty skein",

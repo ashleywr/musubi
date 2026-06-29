@@ -28,15 +28,19 @@ public class MusubiBlocks {
                 .noOcclusion()
         ));
 
-    // Pending block implementations:
+    public static final DeferredHolder<Block, MarudaiBlock> MARUDAI =
+        register("marudai", () -> new MarudaiBlock(
+            BlockBehaviour.Properties.of()
+                .strength(2.0f, 6.0f)
+                .sound(SoundType.WOOD)
+                .noOcclusion()
+        ));
+
+    // Pending:
     //
     // public static final DeferredHolder<Block, SpinningWheelBlock> SPINNING_WHEEL =
     //     register("spinning_wheel", () -> new SpinningWheelBlock(...));
     //     Role: raw fiber → fiber bundles (needle recharge). Entry point to the textile chain.
-    //
-    // public static final DeferredHolder<Block, MarudaiBlock> MARUDAI =
-    //     register("marudai", () -> new MarudaiBlock(...));
-    //     Role: right-click with skein → winds contents onto adjacent spool racks.
 
     private static <T extends Block> DeferredHolder<Block, T> register(String name, Supplier<T> block) {
         DeferredHolder<Block, T> holder = BLOCKS.register(name, block);

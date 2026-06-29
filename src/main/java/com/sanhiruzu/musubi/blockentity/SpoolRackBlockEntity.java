@@ -73,6 +73,16 @@ public class SpoolRackBlockEntity extends BlockEntity {
     }
 
     /**
+     * Public entry-point for the Marudai to deposit individual items one at a time.
+     * Returns the number actually deposited (0 if no space).
+     */
+    public int tryDeposit(ResourceLocation itemId, int amount) {
+        int deposited = depositItem(itemId, amount);
+        if (deposited > 0) setChanged();
+        return deposited;
+    }
+
+    /**
      * Deposits up to {@code amount} items of the given type.
      * Returns the number actually deposited (may be less than amount if the rack fills).
      */

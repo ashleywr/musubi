@@ -17,11 +17,11 @@ public class MusubiBlockEntities {
             .of(SpoolRackBlockEntity::new, MusubiBlocks.SPOOL_RACK.get())
             .build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MarudaiBlockEntity>> MARUDAI =
+        BLOCK_ENTITIES.register("marudai", () -> BlockEntityType.Builder
+            .of(MarudaiBlockEntity::new, MusubiBlocks.MARUDAI.get())
+            .build(null));
+
     // Pending:
-    //
-    // public static final DeferredHolder<...> MARUDAI =
-    //     BLOCK_ENTITIES.register("marudai", () -> BlockEntityType.Builder
-    //         .of(MarudaiBlockEntity::new, MusubiBlocks.MARUDAI.get()).build(null));
-    //
     // public static final DeferredHolder<...> SPINNING_WHEEL = ...
 }
