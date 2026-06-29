@@ -1,0 +1,11 @@
+# Normalise line endings to LF on commit
+* text=auto eol=lf
+
+# Binary — no conversion
+*.jar    binary
+*.png    binary
+*.zip    binary
+*.ogg    binary
+*.wav    binary
+*.ttf    binary
+gradlew  text eol=lf

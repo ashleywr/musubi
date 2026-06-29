@@ -1,0 +1,52 @@
+### Ignore all dot folders except .github ###
+.*/
+!.github/
+!.gitignore
+
+### Gradle ###
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/build/
+
+### Build Artifacts ###
+reports/
+logs/
+libs/
+net/
+META-INF/
+out/
+!**/src/**/out/
+bin/
+!**/src/**/bin/
+
+### Minecraft Modding ###
+run/
+!**/src/**/run/
+**/src/generated/**/.cache/
+
+### Development ###
+internal/
+
+### Environment & Secrets ###
+*.env
+.env.local
+.env.*.local
+
+### Build Files ###
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+*.zip
+
+### IDE Files ###
+*.iws
+*.iml
+*.ipr
+*.swp
+*.swo
+*~
+.classpath
+.project
+.DS_Store
+.idea/
+.vscode/settings.json

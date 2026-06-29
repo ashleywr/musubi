@@ -1,0 +1,17 @@
+{
+  "itemGroup.musubi.main": "Musubi",
+
+  "item.musubi.bone_needle":   "Bone Needle",
+  "item.musubi.iron_needle":   "Iron Needle",
+  "item.musubi.skein":         "Skein",
+  "item.musubi.fiber_bundle":  "Fiber Bundle",
+
+  "block.musubi.marudai":      "Marudai",
+  "block.musubi.spool_rack":   "Spool Rack",
+
+  "musubi.needle.charges":     "%s charges remaining",
+  "musubi.needle.recharging":  "Recharging…",
+  "musubi.skein.contents":     "%s × %s",
+  "musubi.skein.empty":        "Empty skein",
+  "musubi.sewing.rejected":    "The needle cannot read compound items"
+}
