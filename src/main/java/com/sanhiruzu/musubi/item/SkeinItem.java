@@ -50,6 +50,5 @@ public class SkeinItem extends Item {
     }
 
     // TODO: custom merge/stacking behavior (SkeinContents.mergesWith() as the predicate)
-    // TODO: tinted item model using displayColor (custom ItemColor registration on client)
     // TODO: right-click-to-deposit shortcut (shift-right-click spool rack with skein in hand)
 }

@@ -29,6 +29,7 @@ public class Musubi {
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
             modEventBus.addListener(MusubiClient::init);
+            modEventBus.addListener(MusubiClient::registerItemColors);
         }
     }
 }
