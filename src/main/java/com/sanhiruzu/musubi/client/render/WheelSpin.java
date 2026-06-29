@@ -14,6 +14,8 @@ public class WheelSpin {
     private static final double MAX_SPEED = 7.8;
     /** Degrees per tick² — how quickly speed ramps toward its target. */
     private static final double ACCEL = 0.55;
+    /** Velocity threshold that separates "effectively stopped" from "moving". */
+    private static final double MOVING_THRESHOLD = 0.1;
 
     // Stored per-tick (not per-frame) so partialTick interpolation is meaningful.
     // Kept unbounded (never wrapped mod 360) so interpolation never sees a jump;
@@ -21,6 +23,10 @@ public class WheelSpin {
     private double prevAngle;
     private double angle;
     private double velocity;
+
+    // Transition flags set during updateTo (once per game tick), consumed by the BER.
+    private boolean didStart = false;
+    private boolean didStop  = false;
 
     private long lastTick = Long.MIN_VALUE;
 
@@ -41,12 +47,21 @@ public class WheelSpin {
         prevAngle = angle;
         long steps = Math.min(delta, 5L); // don't simulate a backlog if the chunk was unloaded
         double target = spinning ? MAX_SPEED : 0.0;
+        double velBefore = velocity;
         for (long t = 0; t < steps; t++) {
             if (velocity < target)      velocity = Math.min(target, velocity + ACCEL);
             else if (velocity > target) velocity = Math.max(target, velocity - ACCEL);
             angle += velocity;
         }
+        if (velBefore < MOVING_THRESHOLD && velocity >= MOVING_THRESHOLD) didStart = true;
+        if (velBefore >= MOVING_THRESHOLD && velocity < MOVING_THRESHOLD)  didStop  = true;
     }
+
+    /** Returns true (and clears the flag) if the wheel crossed the moving threshold upward this tick. */
+    public boolean consumeStart() { boolean v = didStart; didStart = false; return v; }
+
+    /** Returns true (and clears the flag) if the wheel crossed the moving threshold downward this tick. */
+    public boolean consumeStop()  { boolean v = didStop;  didStop  = false; return v; }
 
     /** Smoothly interpolated angle (degrees) between the last two game ticks. */
     public float lerpAngle(float partialTick) {

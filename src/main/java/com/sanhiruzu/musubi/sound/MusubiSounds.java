@@ -28,6 +28,14 @@ public class MusubiSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> WHEEL_LOAD =
         register("wheel_load");
 
+    /** Client-side one-shot played when the wheel begins spinning (velocity crosses threshold). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> WHEEL_SPIN_UP =
+        register("wheel_spin_up");
+
+    /** Client-side one-shot played when the wheel coasts to a stop. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> WHEEL_COAST_STOP =
+        register("wheel_coast_stop");
+
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(Musubi.MOD_ID, name);
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(id));

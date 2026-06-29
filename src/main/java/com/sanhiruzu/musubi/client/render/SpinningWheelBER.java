@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import com.sanhiruzu.musubi.block.SpinningWheelBlock;
 import com.sanhiruzu.musubi.blockentity.SpinningWheelBlockEntity;
+import com.sanhiruzu.musubi.sound.MusubiSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -16,6 +17,7 @@ import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
@@ -61,9 +63,22 @@ public class SpinningWheelBER implements BlockEntityRenderer<SpinningWheelBlockE
         boolean   spinning = state.getValue(SpinningWheelBlock.SPINNING);
         Direction facing   = state.getValue(SpinningWheelBlock.FACING);
 
-        WheelSpin spin = SPINS.computeIfAbsent(be.getBlockPos(), k -> new WheelSpin());
+        BlockPos pos = be.getBlockPos();
+        WheelSpin spin = SPINS.computeIfAbsent(pos, k -> new WheelSpin());
         spin.updateTo(be.getLevel().getGameTime(), spinning);
         float angle = spin.lerpAngle(partialTick);
+
+        // Transition sounds — client-side only, fired once per state change.
+        if (spin.consumeStart() && Minecraft.getInstance().level != null) {
+            Minecraft.getInstance().level.playLocalSound(
+                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                MusubiSounds.WHEEL_SPIN_UP.get(), SoundSource.BLOCKS, 0.8f, 1.0f, false);
+        }
+        if (spin.consumeStop() && Minecraft.getInstance().level != null) {
+            Minecraft.getInstance().level.playLocalSound(
+                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                MusubiSounds.WHEEL_COAST_STOP.get(), SoundSource.BLOCKS, 0.6f, 0.85f, false);
+        }
 
         pose.pushPose();
 

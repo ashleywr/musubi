@@ -18,5 +18,15 @@
     "sounds": [
       { "name": "minecraft:item.bundle.insert", "type": "event" }
     ]
+  },
+  "wheel_spin_up": {
+    "sounds": [
+      { "name": "minecraft:block.grindstone.use", "type": "event" }
+    ]
+  },
+  "wheel_coast_stop": {
+    "sounds": [
+      { "name": "minecraft:block.wool.hit", "type": "event" }
+    ]
   }
 }
