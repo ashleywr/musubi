@@ -14,9 +14,11 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import com.sanhiruzu.musubi.blockentity.MusubiBlockEntities;
+import com.sanhiruzu.musubi.client.render.SpinningWheelBER;
 import com.sanhiruzu.musubi.client.render.SpoolRackBER;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
@@ -34,6 +36,13 @@ public class MusubiClient {
 
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(MusubiBlockEntities.SPOOL_RACK.get(), SpoolRackBER::new);
+        event.registerBlockEntityRenderer(MusubiBlockEntities.SPINNING_WHEEL.get(), SpinningWheelBER::new);
+    }
+
+    /** The spinning wheel's rotating disc is its own model, not tied to any blockstate,
+     *  so it must be registered as a standalone model to get baked. */
+    public static void registerAdditionalModels(ModelEvent.RegisterAdditional event) {
+        event.register(SpinningWheelBER.WHEEL_MODEL);
     }
 
     public static void registerItemColors(RegisterColorHandlersEvent.Item event) {

@@ -1,8 +1,8 @@
 {
   "credit": "Open in Blockbench to texture — geometry is final",
   "textures": {
-    "wood": "musubi:block/spool_rack",
-    "particle": "musubi:block/spool_rack"
+    "wood": "minecraft:block/jungle_planks",
+    "particle": "minecraft:block/jungle_planks"
   },
   "elements": [
     {

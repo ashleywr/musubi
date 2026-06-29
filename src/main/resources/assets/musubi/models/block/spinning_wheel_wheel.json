@@ -1,0 +1,100 @@
+{
+  "credit": "Rotating wheel disc — rendered by SpinningWheelBER, spins around Z through center (8,8,7)",
+  "textures": {
+    "wood": "minecraft:block/jungle_planks",
+    "particle": "minecraft:block/jungle_planks"
+  },
+  "elements": [
+    {
+      "name": "hub",
+      "from": [7, 7, 6],
+      "to": [9, 9, 8],
+      "faces": {
+        "north": { "uv": [0, 0, 2, 2], "texture": "#wood" },
+        "south": { "uv": [0, 0, 2, 2], "texture": "#wood" },
+        "east":  { "uv": [0, 0, 2, 2], "texture": "#wood" },
+        "west":  { "uv": [0, 0, 2, 2], "texture": "#wood" },
+        "up":    { "uv": [0, 0, 2, 2], "texture": "#wood" },
+        "down":  { "uv": [0, 0, 2, 2], "texture": "#wood" }
+      }
+    },
+    {
+      "name": "spoke_vertical",
+      "from": [7, 2, 6],
+      "to": [9, 14, 8],
+      "faces": {
+        "north": { "uv": [0, 0, 2, 12], "texture": "#wood" },
+        "south": { "uv": [0, 0, 2, 12], "texture": "#wood" },
+        "east":  { "uv": [0, 0, 2, 12], "texture": "#wood" },
+        "west":  { "uv": [0, 0, 2, 12], "texture": "#wood" },
+        "up":    { "uv": [0, 0, 2, 2],  "texture": "#wood" },
+        "down":  { "uv": [0, 0, 2, 2],  "texture": "#wood" }
+      }
+    },
+    {
+      "name": "spoke_horizontal",
+      "from": [2, 7, 6],
+      "to": [14, 9, 8],
+      "faces": {
+        "north": { "uv": [0, 0, 12, 2], "texture": "#wood" },
+        "south": { "uv": [0, 0, 12, 2], "texture": "#wood" },
+        "east":  { "uv": [0, 0, 2, 2],  "texture": "#wood" },
+        "west":  { "uv": [0, 0, 2, 2],  "texture": "#wood" },
+        "up":    { "uv": [0, 0, 12, 2], "texture": "#wood" },
+        "down":  { "uv": [0, 0, 12, 2], "texture": "#wood" }
+      }
+    },
+    {
+      "name": "rim_top",
+      "from": [5, 13, 6],
+      "to": [11, 15, 8],
+      "faces": {
+        "north": { "uv": [0, 0, 6, 2], "texture": "#wood" },
+        "south": { "uv": [0, 0, 6, 2], "texture": "#wood" },
+        "east":  { "uv": [0, 0, 2, 2], "texture": "#wood" },
+        "west":  { "uv": [0, 0, 2, 2], "texture": "#wood" },
+        "up":    { "uv": [0, 0, 6, 2], "texture": "#wood" },
+        "down":  { "uv": [0, 0, 6, 2], "texture": "#wood" }
+      }
+    },
+    {
+      "name": "rim_bottom",
+      "from": [5, 1, 6],
+      "to": [11, 3, 8],
+      "faces": {
+        "north": { "uv": [0, 0, 6, 2], "texture": "#wood" },
+        "south": { "uv": [0, 0, 6, 2], "texture": "#wood" },
+        "east":  { "uv": [0, 0, 2, 2], "texture": "#wood" },
+        "west":  { "uv": [0, 0, 2, 2], "texture": "#wood" },
+        "up":    { "uv": [0, 0, 6, 2], "texture": "#wood" },
+        "down":  { "uv": [0, 0, 6, 2], "texture": "#wood" }
+      }
+    },
+    {
+      "name": "rim_left",
+      "from": [1, 5, 6],
+      "to": [3, 11, 8],
+      "faces": {
+        "north": { "uv": [0, 0, 2, 6], "texture": "#wood" },
+        "south": { "uv": [0, 0, 2, 6], "texture": "#wood" },
+        "east":  { "uv": [0, 0, 2, 6], "texture": "#wood" },
+        "west":  { "uv": [0, 0, 2, 6], "texture": "#wood" },
+        "up":    { "uv": [0, 0, 2, 2], "texture": "#wood" },
+        "down":  { "uv": [0, 0, 2, 2], "texture": "#wood" }
+      }
+    },
+    {
+      "name": "rim_right",
+      "from": [13, 5, 6],
+      "to": [15, 11, 8],
+      "faces": {
+        "north": { "uv": [0, 0, 2, 6], "texture": "#wood" },
+        "south": { "uv": [0, 0, 2, 6], "texture": "#wood" },
+        "east":  { "uv": [0, 0, 2, 6], "texture": "#wood" },
+        "west":  { "uv": [0, 0, 2, 6], "texture": "#wood" },
+        "up":    { "uv": [0, 0, 2, 2], "texture": "#wood" },
+        "down":  { "uv": [0, 0, 2, 2], "texture": "#wood" }
+      }
+    }
+  ]
+}

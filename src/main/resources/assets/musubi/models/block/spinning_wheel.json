@@ -1,8 +1,8 @@
 {
   "credit": "Open in Blockbench to texture — geometry is final",
   "textures": {
-    "wood": "musubi:block/spinning_wheel",
-    "particle": "musubi:block/spinning_wheel"
+    "wood": "minecraft:block/jungle_planks",
+    "particle": "minecraft:block/jungle_planks"
   },
   "elements": [
     {
