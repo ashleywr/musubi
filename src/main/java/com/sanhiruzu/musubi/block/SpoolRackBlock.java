@@ -19,7 +19,9 @@ import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 
@@ -40,7 +42,9 @@ import javax.annotation.Nullable;
 public class SpoolRackBlock extends BaseEntityBlock {
 
     public static final MapCodec<SpoolRackBlock> CODEC = simpleCodec(SpoolRackBlock::new);
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final DirectionProperty FACING  = BlockStateProperties.HORIZONTAL_FACING;
+    /** True when the rack is mounted on the underside of a block (pegs hang downward). */
+    public static final BooleanProperty   HANGING = BooleanProperty.create("hanging");
 
     @Override
     public MapCodec<SpoolRackBlock> codec() {
@@ -49,18 +53,31 @@ public class SpoolRackBlock extends BaseEntityBlock {
 
     public SpoolRackBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+        registerDefaultState(stateDefinition.any()
+            .setValue(FACING, Direction.NORTH)
+            .setValue(HANGING, false));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, HANGING);
     }
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        // Face toward the player so the display face is always readable.
-        return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+        boolean hanging = context.getClickedFace() == Direction.DOWN;
+        return defaultBlockState()
+            .setValue(FACING, context.getHorizontalDirection().getOpposite())
+            .setValue(HANGING, hanging);
+    }
+
+    @Override
+    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+        if (state.getValue(HANGING)) {
+            return Block.canSupportCenter(level, pos.above(), Direction.DOWN);
+        }
+        Direction behind = state.getValue(FACING).getOpposite();
+        return Block.canSupportCenter(level, pos.relative(behind), behind.getOpposite());
     }
 
     @Override
