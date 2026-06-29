@@ -30,5 +30,9 @@
   "musubi.sewing.rejected":     "The tama cannot read compound items",
   "musubi.sewing.no_silk":      "Sewing requires silk thread",
 
-  "musubi.jade.spool_rack.empty": "Empty"
+  "musubi.jade.spool_rack.empty": "Empty",
+
+  "musubi.jei.silkworm_boiling":             "Silk Boiling",
+  "musubi.jei.silkworm_boiling.fire_hint":   "beneath cauldron",
+  "musubi.jei.silkworm_boiling.fire_tooltip": "Place campfire, fire, or magma block directly beneath the water cauldron"
 }
