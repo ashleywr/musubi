@@ -1,6 +1,7 @@
 package com.sanhiruzu.musubi.storage;
 
 import com.sanhiruzu.musubi.Musubi;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -33,12 +34,12 @@ public class MusubiSavedData extends SavedData {
 
     public static MusubiSavedData get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
-            new SavedData.Factory<>(MusubiSavedData::new, MusubiSavedData::load),
+            new SavedData.Factory<>(MusubiSavedData::new, MusubiSavedData::load, null),
             SAVE_KEY
         );
     }
 
-    private static MusubiSavedData load(CompoundTag tag) {
+    private static MusubiSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
         MusubiSavedData data = new MusubiSavedData();
         ListTag entries = tag.getList(TAG_ENTRIES, Tag.TAG_COMPOUND);
         for (int i = 0; i < entries.size(); i++) {
@@ -51,7 +52,7 @@ public class MusubiSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag entries = new ListTag();
         store.forEach((id, payload) -> {
             CompoundTag entry = new CompoundTag();

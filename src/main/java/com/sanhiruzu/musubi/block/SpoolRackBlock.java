@@ -1,5 +1,6 @@
 package com.sanhiruzu.musubi.block;
 
+import com.mojang.serialization.MapCodec;
 import com.sanhiruzu.musubi.blockentity.SpoolRackBlockEntity;
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
@@ -7,6 +8,7 @@ import com.sanhiruzu.musubi.item.SkeinItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.ItemStack;
@@ -37,7 +39,13 @@ import javax.annotation.Nullable;
  */
 public class SpoolRackBlock extends BaseEntityBlock {
 
+    public static final MapCodec<SpoolRackBlock> CODEC = simpleCodec(SpoolRackBlock::new);
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+
+    @Override
+    public MapCodec<SpoolRackBlock> codec() {
+        return CODEC;
+    }
 
     public SpoolRackBlock(Properties properties) {
         super(properties);
@@ -68,21 +76,21 @@ public class SpoolRackBlock extends BaseEntityBlock {
     // ── Interaction ───────────────────────────────────────────────────────────
 
     @Override
-    protected InteractionResult useItemOn(
+    protected ItemInteractionResult useItemOn(
             ItemStack stack, BlockState state, Level level, BlockPos pos,
             Player player, net.minecraft.world.InteractionHand hand,
             BlockHitResult hit) {
 
         if (!(stack.getItem() instanceof SkeinItem)) {
-            return InteractionResult.PASS;
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
-        if (level.isClientSide) return InteractionResult.SUCCESS;
+        if (level.isClientSide) return ItemInteractionResult.SUCCESS;
 
         SpoolRackBlockEntity be = getBlockEntity(level, pos);
-        if (be == null) return InteractionResult.FAIL;
+        if (be == null) return ItemInteractionResult.FAIL;
 
         SkeinContents contents = stack.get(MusubiDataComponents.SKEIN_CONTENTS);
-        if (contents == null || contents.count() == 0) return InteractionResult.FAIL;
+        if (contents == null || contents.count() == 0) return ItemInteractionResult.FAIL;
 
         SkeinContents remainder = be.depositSkein(contents);
         if (remainder == null) {
@@ -91,7 +99,7 @@ public class SpoolRackBlock extends BaseEntityBlock {
             stack.set(MusubiDataComponents.SKEIN_CONTENTS, remainder);
         }
         level.sendBlockUpdated(pos, state, state, 3);
-        return InteractionResult.SUCCESS;
+        return ItemInteractionResult.CONSUME;
     }
 
     @Override

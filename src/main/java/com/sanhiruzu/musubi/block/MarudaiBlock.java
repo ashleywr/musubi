@@ -1,5 +1,6 @@
 package com.sanhiruzu.musubi.block;
 
+import com.mojang.serialization.MapCodec;
 import com.sanhiruzu.musubi.blockentity.MarudaiBlockEntity;
 import com.sanhiruzu.musubi.blockentity.MusubiBlockEntities;
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
@@ -10,6 +11,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -44,8 +46,14 @@ import javax.annotation.Nullable;
  */
 public class MarudaiBlock extends BaseEntityBlock {
 
+    public static final MapCodec<MarudaiBlock> CODEC = simpleCodec(MarudaiBlock::new);
     public static final DirectionProperty FACING  = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty   WINDING = BooleanProperty.create("winding");
+
+    @Override
+    public MapCodec<MarudaiBlock> codec() {
+        return CODEC;
+    }
 
     public MarudaiBlock(Properties properties) {
         super(properties);
@@ -86,37 +94,37 @@ public class MarudaiBlock extends BaseEntityBlock {
     // ── Interaction ───────────────────────────────────────────────────────────
 
     @Override
-    protected InteractionResult useItemOn(
+    protected ItemInteractionResult useItemOn(
             ItemStack stack, BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hit) {
 
         if (!(stack.getItem() instanceof SkeinItem)) {
-            return InteractionResult.PASS;
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
-        if (level.isClientSide) return InteractionResult.SUCCESS;
+        if (level.isClientSide) return ItemInteractionResult.SUCCESS;
 
         MarudaiBlockEntity be = getBlockEntity(level, pos);
-        if (be == null) return InteractionResult.FAIL;
+        if (be == null) return ItemInteractionResult.FAIL;
 
         if (be.isWinding()) {
             player.displayClientMessage(
                 Component.translatable("musubi.marudai.already_winding"), true);
-            return InteractionResult.FAIL;
+            return ItemInteractionResult.FAIL;
         }
 
         SkeinContents contents = stack.get(MusubiDataComponents.SKEIN_CONTENTS);
-        if (contents == null || contents.count() == 0) return InteractionResult.FAIL;
+        if (contents == null || contents.count() == 0) return ItemInteractionResult.FAIL;
 
         boolean mounted = be.mountSkein(contents);
         if (!mounted) {
             player.displayClientMessage(
                 Component.translatable("musubi.marudai.no_racks"), true);
-            return InteractionResult.FAIL;
+            return ItemInteractionResult.FAIL;
         }
 
         stack.shrink(1);
         level.setBlock(pos, state.setValue(WINDING, true), 3);
-        return InteractionResult.SUCCESS;
+        return ItemInteractionResult.CONSUME;
     }
 
     // ── Break behaviour ───────────────────────────────────────────────────────

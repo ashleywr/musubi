@@ -59,19 +59,29 @@ public record SkeinContents(
         VariantEntry.CODEC.listOf().fieldOf("variants").forGetter(SkeinContents::variants),
         Codec.INT.fieldOf("display_color").forGetter(SkeinContents::displayColor),
         Codec.intRange(0, Integer.MAX_VALUE).fieldOf("complexity_score").forGetter(SkeinContents::complexityScore),
-        net.minecraft.util.ExtraCodecs.UUID.optionalFieldOf("data_ref").forGetter(SkeinContents::dataRef)
+        Codec.STRING.<UUID>xmap(UUID::fromString, UUID::toString).optionalFieldOf("data_ref").forGetter(SkeinContents::dataRef)
     ).apply(inst, SkeinContents::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SkeinContents> STREAM_CODEC =
-        StreamCodec.composite(
-            ByteBufCodecs.VAR_INT,                              SkeinContents::needleTier,
-            ByteBufCodecs.STRING_UTF8,                          SkeinContents::groupKey,
-            ByteBufCodecs.VAR_INT,                              SkeinContents::count,
-            VariantEntry.STREAM_CODEC.apply(ByteBufCodecs.list()), SkeinContents::variants,
-            ByteBufCodecs.INT,                                  SkeinContents::displayColor,
-            ByteBufCodecs.VAR_INT,                              SkeinContents::complexityScore,
-            ByteBufCodecs.optional(uuidStreamCodec()),          SkeinContents::dataRef,
-            SkeinContents::new
+        StreamCodec.of(
+            (buf, sc) -> {
+                ByteBufCodecs.VAR_INT.encode(buf, sc.needleTier());
+                ByteBufCodecs.STRING_UTF8.encode(buf, sc.groupKey());
+                ByteBufCodecs.VAR_INT.encode(buf, sc.count());
+                VariantEntry.STREAM_CODEC.apply(ByteBufCodecs.list()).encode(buf, sc.variants());
+                ByteBufCodecs.INT.encode(buf, sc.displayColor());
+                ByteBufCodecs.VAR_INT.encode(buf, sc.complexityScore());
+                ByteBufCodecs.optional(uuidStreamCodec()).encode(buf, sc.dataRef());
+            },
+            buf -> new SkeinContents(
+                ByteBufCodecs.VAR_INT.decode(buf),
+                ByteBufCodecs.STRING_UTF8.decode(buf),
+                ByteBufCodecs.VAR_INT.decode(buf),
+                VariantEntry.STREAM_CODEC.apply(ByteBufCodecs.list()).decode(buf),
+                ByteBufCodecs.INT.decode(buf),
+                ByteBufCodecs.VAR_INT.decode(buf),
+                ByteBufCodecs.optional(uuidStreamCodec()).decode(buf)
+            )
         );
 
     /** Whether this skein can merge counts with another in the same inventory slot. */
