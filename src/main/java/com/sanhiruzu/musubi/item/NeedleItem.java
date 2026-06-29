@@ -1,10 +1,15 @@
 package com.sanhiruzu.musubi.item;
 
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
+import com.sanhiruzu.musubi.component.SkeinContents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -12,7 +17,10 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * The needle — lives in a Curios slot, never occupies inventory.
@@ -23,17 +31,22 @@ import java.util.List;
  *   2 = silver  → cross-tag blend        (TBD — mid-game gate)
  *   3 = orihime → anything               (Eternal Starlight gate)
  *
- * Sewing uses a two-phase hold mechanic:
+ * Sewing uses a two-phase hold mechanic on the item in the main hand:
  *   Phase 1 (ticks 0–29): startup animation, free cancel at any point.
- *   Phase 2 (tick 30+):   drain begins; one charge consumed at phase entry.
+ *   Phase 2 (tick 30+):   drains off-hand stack into the matching skein.
+ *                         One charge is consumed at Phase 2 entry.
+ *                         Releasing early leaves a partial skein in inventory.
  *
- * maxCharges is the starting and recharge-cap value. Current charges live in the
- * NEEDLE_CHARGES DataComponent so they persist across sessions and inventory moves.
+ * The off-hand is the drain target: hold items to sew in the off-hand, needle in
+ * the main hand. Each DRAIN_INTERVAL ticks, one item is moved from the off-hand
+ * into a SkeinContents variant list in the matching skein in inventory.
  */
 public class NeedleItem extends Item {
 
     /** Ticks of startup before drain begins (1.5 s at 20 t/s). */
     public static final int STARTUP_TICKS = 30;
+    /** Ticks between each drained item (5 items/second base rate). */
+    private static final int DRAIN_INTERVAL = 4;
 
     public final int tier;
     public final int maxCharges;
@@ -89,13 +102,31 @@ public class NeedleItem extends Item {
 
     @Override
     public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int remainingUseTicks) {
-        if (level.isClientSide) return;
+        if (level.isClientSide || !(entity instanceof Player player)) return;
         int ticksHeld = getUseDuration(stack, entity) - remainingUseTicks;
+
         if (ticksHeld == STARTUP_TICKS) {
-            // Phase 1 complete — Phase 2 drain begins on next tick.
-            // TODO: consume one charge here; begin draining target items into SkeinContents.
+            // Phase 2 entry: verify off-hand has items, then lock in the skein.
+            ItemStack offhand = player.getOffhandItem();
+            if (offhand.isEmpty()) {
+                player.stopUsingItem();
+                return;
+            }
+            consumeCharge(stack);
+            String groupKey = computeGroupKey(offhand);
+            ensureSkein(player, groupKey, offhand);
+
+        } else if (ticksHeld > STARTUP_TICKS && (ticksHeld - STARTUP_TICKS) % DRAIN_INTERVAL == 0) {
+            // Phase 2 drain tick: move one off-hand item into the skein.
+            ItemStack offhand = player.getOffhandItem();
+            if (offhand.isEmpty()) {
+                // Off-hand exhausted — stop naturally; partial skein stays.
+                player.stopUsingItem();
+                return;
+            }
+            String groupKey = computeGroupKey(offhand);
+            drainOneItem(player, groupKey, offhand);
         }
-        // TODO: Phase 2 per-tick drain logic.
     }
 
     @Override
@@ -105,7 +136,7 @@ public class NeedleItem extends Item {
             // Released during Phase 1 — free cancel; charges untouched, no skein created.
             return;
         }
-        // Released during Phase 2 — TODO: finalize the in-progress skein from partial drain.
+        // Released during Phase 2 — partial skein already in inventory; nothing to finalize.
     }
 
     // ── Tooltip ───────────────────────────────────────────────────────────────
@@ -120,7 +151,118 @@ public class NeedleItem extends Item {
         }
     }
 
+    // ── Sewing helpers ────────────────────────────────────────────────────────
+
+    /**
+     * Derives the group key for the given item based on this needle's tier.
+     * Tiers 0/2 use the broadest matching item tag (heuristic: shortest tag path).
+     * Tiers 1/3 use the exact item registry ID.
+     */
+    private String computeGroupKey(ItemStack target) {
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(target.getItem());
+        if (itemId == null) return "minecraft:air";
+
+        if (tier == 1 || tier == 3) {
+            return itemId.toString();
+        }
+
+        // Tier 0/2: prefer the broadest (shortest path) tag containing this item.
+        return BuiltInRegistries.ITEM.getHolder(itemId)
+            .map(h -> h.tags()
+                .map(TagKey::location)
+                .map(ResourceLocation::toString)
+                .min(Comparator.comparingInt(String::length))
+                .orElse(itemId.toString()))
+            .orElse(itemId.toString());
+    }
+
+    /**
+     * Finds or creates a matching skein (same tier + groupKey) in the player's main inventory.
+     * Drops the new skein at the player's position if inventory is full.
+     */
+    private void ensureSkein(Player player, String groupKey, ItemStack sample) {
+        if (findMatchingSkein(player, groupKey) != null) return;
+
+        int color = colorFromGroupKey(groupKey);
+        SkeinContents initial = new SkeinContents(tier, groupKey, 0, List.of(), color, 0, Optional.empty());
+        ItemStack skein = new ItemStack(MusubiItems.SKEIN.get());
+        skein.set(MusubiDataComponents.SKEIN_CONTENTS, initial);
+
+        if (!player.getInventory().add(skein)) {
+            player.drop(skein, false);
+        }
+    }
+
+    /**
+     * Takes one item from offhand and records it as a VariantEntry on the matching skein.
+     * Merges into an existing variant if the item type is already present in the list.
+     */
+    private void drainOneItem(Player player, String groupKey, ItemStack offhand) {
+        ItemStack skeinStack = findMatchingSkein(player, groupKey);
+        if (skeinStack == null || skeinStack.isEmpty()) return;
+
+        SkeinContents contents = skeinStack.get(MusubiDataComponents.SKEIN_CONTENTS);
+        if (contents == null) return;
+
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(offhand.getItem());
+        if (itemId == null) return;
+
+        offhand.shrink(1);
+
+        // Merge into existing variant entry for this item type, or append a new one.
+        List<SkeinContents.VariantEntry> variants = new ArrayList<>(contents.variants());
+        boolean merged = false;
+        for (int i = 0; i < variants.size(); i++) {
+            if (variants.get(i).itemId().equals(itemId)) {
+                variants.set(i, new SkeinContents.VariantEntry(itemId, variants.get(i).count() + 1));
+                merged = true;
+                break;
+            }
+        }
+        if (!merged) {
+            variants.add(new SkeinContents.VariantEntry(itemId, 1));
+        }
+
+        skeinStack.set(MusubiDataComponents.SKEIN_CONTENTS, new SkeinContents(
+            contents.needleTier(),
+            contents.groupKey(),
+            contents.count() + 1,
+            List.copyOf(variants),
+            contents.displayColor(),
+            contents.complexityScore(),
+            contents.dataRef()
+        ));
+    }
+
+    /**
+     * Searches the player's 36-slot main inventory for a skein with matching tier and groupKey.
+     * Returns the live ItemStack reference — mutations on it update the inventory directly.
+     */
+    private ItemStack findMatchingSkein(Player player, String groupKey) {
+        Inventory inv = player.getInventory();
+        for (ItemStack s : inv.items) {
+            if (s.getItem() instanceof SkeinItem) {
+                SkeinContents c = s.get(MusubiDataComponents.SKEIN_CONTENTS);
+                if (c != null && c.needleTier() == tier && c.groupKey().equals(groupKey)) {
+                    return s;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Deterministic display color derived from groupKey hash.
+     * Each channel is floored at 0x40 to avoid near-black results.
+     */
+    private static int colorFromGroupKey(String groupKey) {
+        int h = groupKey.hashCode();
+        int r = Math.max(0x40, (h >>> 16) & 0xFF);
+        int g = Math.max(0x40, (h >>> 8)  & 0xFF);
+        int b = Math.max(0x40,  h          & 0xFF);
+        return (r << 16) | (g << 8) | b;
+    }
+
     // TODO: Curios slot registration (ICapabilityProvider via modEventBus)
-    // TODO: group_key computation by tier (tag lookup vs item ID)
     // TODO: complexity scoring for drain rate and skein capacity budget
 }
