@@ -44,9 +44,24 @@ public class MusubiBlocks {
                 .noOcclusion()
         ));
 
+    /** Placed only via SilkwormItem — no BlockItem. */
+    public static final DeferredHolder<Block, SilkwormBlock> SILKWORM =
+        registerNoItem("silkworm", () -> new SilkwormBlock(
+            BlockBehaviour.Properties.of()
+                .strength(0.1f)
+                .sound(SoundType.WOOL)
+                .noOcclusion()
+                .noCollission()
+                .randomTicks()
+        ));
+
     private static <T extends Block> DeferredHolder<Block, T> register(String name, Supplier<T> block) {
         DeferredHolder<Block, T> holder = BLOCKS.register(name, block);
         BLOCK_ITEMS.register(name, () -> new BlockItem(holder.get(), new Item.Properties()));
         return holder;
+    }
+
+    private static <T extends Block> DeferredHolder<Block, T> registerNoItem(String name, Supplier<T> block) {
+        return BLOCKS.register(name, block);
     }
 }

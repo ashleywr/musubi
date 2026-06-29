@@ -1,0 +1,19 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "cocoon":   "musubi:item/silkworm_cocoon",
+    "particle": "musubi:item/silkworm_cocoon"
+  },
+  "elements": [{
+    "from": [5, 9, 5],
+    "to":   [11, 16, 11],
+    "faces": {
+      "north": { "uv": [3, 2, 9, 9], "texture": "#cocoon" },
+      "south": { "uv": [3, 2, 9, 9], "texture": "#cocoon" },
+      "east":  { "uv": [3, 2, 9, 9], "texture": "#cocoon" },
+      "west":  { "uv": [3, 2, 9, 9], "texture": "#cocoon" },
+      "up":    { "uv": [3, 3, 9, 9], "texture": "#cocoon" },
+      "down":  { "uv": [3, 3, 9, 9], "texture": "#cocoon" }
+    }
+  }]
+}

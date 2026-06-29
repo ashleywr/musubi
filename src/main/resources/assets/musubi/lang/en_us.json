@@ -1,22 +1,25 @@
 {
   "itemGroup.musubi.main": "Musubi",
 
-  "item.musubi.bone_needle":    "Bone Needle",
-  "item.musubi.iron_needle":    "Iron Needle",
-  "item.musubi.silver_needle":  "Silver Needle",
-  "item.musubi.orihime_needle": "Orihime Needle",
-  "item.musubi.skein":          "Silk Skein",
-  "item.musubi.fiber_bundle":   "Fiber Bundle",
-  "item.musubi.silk_thread":    "Silk Thread",
+  "item.musubi.bone_tama":    "Bone Tama",
+  "item.musubi.iron_tama":    "Iron Tama",
+  "item.musubi.silver_tama":  "Silver Tama",
+  "item.musubi.orihime_tama": "Orihime Tama",
+  "item.musubi.skein":           "Silk Skein",
+  "item.musubi.fiber_bundle":    "Fiber Bundle",
+  "item.musubi.silk_thread":     "Silk Thread",
+  "item.musubi.silkworm":        "Silkworm",
+  "item.musubi.silkworm_cocoon": "Silkworm Cocoon",
 
   "block.musubi.spinning_wheel": "Spinning Wheel",
   "block.musubi.marudai":        "Marudai",
   "block.musubi.spool_rack":     "Spool Rack",
+  "block.musubi.silkworm":       "Silkworm",
 
-  "musubi.needle.tier.0": "Groups by tag — essence of kinship",
-  "musubi.needle.tier.1": "Groups by item — discipline of identity",
-  "musubi.needle.tier.2": "Blends across tags — resonance of relation",
-  "musubi.needle.tier.3": "Sews anything — transcendence of form",
+  "musubi.tama.tier.0": "Winds by tag — essence of kinship",
+  "musubi.tama.tier.1": "Winds by item — discipline of identity",
+  "musubi.tama.tier.2": "Blends across tags — resonance of relation",
+  "musubi.tama.tier.3": "Winds anything — transcendence of form",
 
   "musubi.marudai.no_racks":       "No spool racks within reach",
   "musubi.marudai.already_winding": "Already winding — wait for it to finish",
@@ -24,7 +27,7 @@
   "musubi.skein.contents_tag":  "%s — %s items",
   "musubi.skein.contents_item": "%s × %s",
   "musubi.skein.empty":         "Empty skein",
-  "musubi.sewing.rejected":     "The needle cannot read compound items",
+  "musubi.sewing.rejected":     "The tama cannot read compound items",
   "musubi.sewing.no_silk":      "Sewing requires silk thread",
 
   "musubi.jade.spool_rack.empty": "Empty"
