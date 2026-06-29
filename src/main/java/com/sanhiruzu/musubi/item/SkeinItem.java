@@ -3,6 +3,10 @@ package com.sanhiruzu.musubi.item;
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ClickAction;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -49,6 +53,35 @@ public class SkeinItem extends Item {
         }
     }
 
-    // TODO: custom merge/stacking behavior (SkeinContents.mergesWith() as the predicate)
+    // Right-click a held skein onto a slot-skein in inventory GUI → merge held into slot.
+    @Override
+    public boolean overrideStackedOnOther(ItemStack held, Slot slot, ClickAction action, Player player) {
+        if (action != ClickAction.SECONDARY) return false;
+        ItemStack target = slot.getItem();
+        if (!(target.getItem() instanceof SkeinItem)) return false;
+        SkeinContents heldContents   = held.get(MusubiDataComponents.SKEIN_CONTENTS);
+        SkeinContents targetContents = target.get(MusubiDataComponents.SKEIN_CONTENTS);
+        if (heldContents == null || targetContents == null) return false;
+        if (!targetContents.mergesWith(heldContents)) return false;
+        target.set(MusubiDataComponents.SKEIN_CONTENTS, targetContents.mergeWith(heldContents));
+        held.shrink(1);
+        return true;
+    }
+
+    // Right-click something onto a slot-skein in inventory GUI → merge if compatible.
+    @Override
+    public boolean overrideOtherStackedOnMe(ItemStack slotSkein, ItemStack held, Slot slot,
+            ClickAction action, Player player, SlotAccess access) {
+        if (action != ClickAction.SECONDARY) return false;
+        if (!(held.getItem() instanceof SkeinItem)) return false;
+        SkeinContents slotContents = slotSkein.get(MusubiDataComponents.SKEIN_CONTENTS);
+        SkeinContents heldContents = held.get(MusubiDataComponents.SKEIN_CONTENTS);
+        if (slotContents == null || heldContents == null) return false;
+        if (!slotContents.mergesWith(heldContents)) return false;
+        slotSkein.set(MusubiDataComponents.SKEIN_CONTENTS, slotContents.mergeWith(heldContents));
+        held.shrink(1);
+        return true;
+    }
+
     // TODO: right-click-to-deposit shortcut (shift-right-click spool rack with skein in hand)
 }

@@ -89,6 +89,22 @@ public record SkeinContents(
         return this.needleTier == other.needleTier && this.groupKey.equals(other.groupKey);
     }
 
+    /** Merges {@code other} into this skein, combining variant counts by itemId. */
+    public SkeinContents mergeWith(SkeinContents other) {
+        java.util.LinkedHashMap<ResourceLocation, Integer> combined = new java.util.LinkedHashMap<>();
+        for (VariantEntry v : this.variants()) combined.merge(v.itemId(), v.count(), Integer::sum);
+        for (VariantEntry v : other.variants()) combined.merge(v.itemId(), v.count(), Integer::sum);
+        List<VariantEntry> newVariants = combined.entrySet().stream()
+            .map(e -> new VariantEntry(e.getKey(), e.getValue()))
+            .toList();
+        return new SkeinContents(
+            needleTier, groupKey, count + other.count(),
+            newVariants, displayColor,
+            Math.max(complexityScore, other.complexityScore()),
+            dataRef.or(() -> other.dataRef())
+        );
+    }
+
     /** True for bone and silver needles (tag-grouped); false for iron and orihime (item-exact). */
     public boolean isTagGrouped() {
         return needleTier == 0 || needleTier == 2;
