@@ -22,6 +22,8 @@ public class MusubiBlockEntities {
             .of(MarudaiBlockEntity::new, MusubiBlocks.MARUDAI.get())
             .build(null));
 
-    // Pending:
-    // public static final DeferredHolder<...> SPINNING_WHEEL = ...
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SpinningWheelBlockEntity>> SPINNING_WHEEL =
+        BLOCK_ENTITIES.register("spinning_wheel", () -> BlockEntityType.Builder
+            .of(SpinningWheelBlockEntity::new, MusubiBlocks.SPINNING_WHEEL.get())
+            .build(null));
 }

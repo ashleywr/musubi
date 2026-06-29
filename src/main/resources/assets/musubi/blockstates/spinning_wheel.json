@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,spinning=false": { "model": "musubi:block/spinning_wheel" },
+    "facing=north,spinning=true":  { "model": "musubi:block/spinning_wheel" },
+    "facing=east,spinning=false":  { "model": "musubi:block/spinning_wheel", "y": 90 },
+    "facing=east,spinning=true":   { "model": "musubi:block/spinning_wheel", "y": 90 },
+    "facing=south,spinning=false": { "model": "musubi:block/spinning_wheel", "y": 180 },
+    "facing=south,spinning=true":  { "model": "musubi:block/spinning_wheel", "y": 180 },
+    "facing=west,spinning=false":  { "model": "musubi:block/spinning_wheel", "y": 270 },
+    "facing=west,spinning=true":   { "model": "musubi:block/spinning_wheel", "y": 270 }
+  }
+}
