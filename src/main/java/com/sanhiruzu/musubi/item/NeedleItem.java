@@ -2,6 +2,7 @@ package com.sanhiruzu.musubi.item;
 
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
+import com.sanhiruzu.musubi.sound.MusubiSounds;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -9,6 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -120,6 +122,9 @@ public class NeedleItem extends Item {
 
             drainOneItem(player, groupKey, offhand);
             spawnDrainParticles((ServerLevel) level, player, drainColor);
+            level.playSound(null, player.blockPosition(),
+                MusubiSounds.NEEDLE_COLLECT.get(), SoundSource.PLAYERS,
+                0.4f, 0.85f + level.random.nextFloat() * 0.3f);
         }
     }
 

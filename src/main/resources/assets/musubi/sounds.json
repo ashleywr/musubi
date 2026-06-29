@@ -1,0 +1,22 @@
+{
+  "needle_collect": {
+    "sounds": [
+      { "name": "minecraft:item.armor.equip_leather", "type": "event" }
+    ]
+  },
+  "rack_deposit": {
+    "sounds": [
+      { "name": "minecraft:block.wool.place", "type": "event" }
+    ]
+  },
+  "wheel_spin": {
+    "sounds": [
+      { "name": "minecraft:ui.loom.take_result", "type": "event" }
+    ]
+  },
+  "wheel_load": {
+    "sounds": [
+      { "name": "minecraft:item.bundle.insert", "type": "event" }
+    ]
+  }
+}

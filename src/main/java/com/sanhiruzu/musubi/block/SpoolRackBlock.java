@@ -5,8 +5,10 @@ import com.sanhiruzu.musubi.blockentity.SpoolRackBlockEntity;
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
 import com.sanhiruzu.musubi.item.SkeinItem;
+import com.sanhiruzu.musubi.sound.MusubiSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -116,6 +118,8 @@ public class SpoolRackBlock extends BaseEntityBlock {
             stack.set(MusubiDataComponents.SKEIN_CONTENTS, remainder);
         }
         level.sendBlockUpdated(pos, state, state, 3);
+        level.playSound(null, pos, MusubiSounds.RACK_DEPOSIT.get(), SoundSource.BLOCKS,
+            0.8f, 0.9f + level.random.nextFloat() * 0.2f);
         return ItemInteractionResult.CONSUME;
     }
 

@@ -3,10 +3,12 @@ package com.sanhiruzu.musubi.blockentity;
 import com.sanhiruzu.musubi.block.SpinningWheelBlock;
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
+import com.sanhiruzu.musubi.sound.MusubiSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -89,6 +91,8 @@ public class SpinningWheelBlockEntity extends BlockEntity {
         skein.set(MusubiDataComponents.SKEIN_CONTENTS, updated);
         setChanged();
         level.sendBlockUpdated(pos, state, state, 3);
+        level.playSound(null, pos, MusubiSounds.WHEEL_SPIN.get(), SoundSource.BLOCKS,
+            0.6f, 0.9f + level.random.nextFloat() * 0.2f);
     }
 
     private void ejectItem(Level level, BlockPos pos, BlockState state, ItemStack stack) {
@@ -123,6 +127,7 @@ public class SpinningWheelBlockEntity extends BlockEntity {
         level.setBlock(pos, state.setValue(SpinningWheelBlock.SPINNING, true), 3);
         setChanged();
         level.sendBlockUpdated(pos, state, state, 3);
+        level.playSound(null, pos, MusubiSounds.WHEEL_LOAD.get(), SoundSource.BLOCKS, 0.9f, 1.0f);
     }
 
     public ItemStack retrieveSkein(Level level, BlockPos pos, BlockState state) {

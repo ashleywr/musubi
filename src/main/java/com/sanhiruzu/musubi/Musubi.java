@@ -5,6 +5,7 @@ import com.sanhiruzu.musubi.block.MusubiBlocks;
 import com.sanhiruzu.musubi.blockentity.MusubiBlockEntities;
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.item.MusubiItems;
+import com.sanhiruzu.musubi.sound.MusubiSounds;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -24,6 +25,7 @@ public class Musubi {
         MusubiBlocks.BLOCKS.register(modEventBus);
         MusubiBlocks.BLOCK_ITEMS.register(modEventBus);
         MusubiBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        MusubiSounds.SOUNDS.register(modEventBus);
 
         modEventBus.addListener(MusubiCapabilities::register);
 
@@ -31,6 +33,7 @@ public class Musubi {
             modEventBus.addListener(MusubiClient::init);
             modEventBus.addListener(MusubiClient::registerItemColors);
             modEventBus.addListener(MusubiClient::registerRenderers);
+            modEventBus.addListener(MusubiClient::registerAdditionalModels);
         }
     }
 }
