@@ -47,12 +47,14 @@ public class Musubi {
 
         modEventBus.addListener(MusubiCapabilities::register);
         modEventBus.addListener(Musubi::commonSetup);
+        modEventBus.addListener(com.sanhiruzu.musubi.network.MusubiNetwork::register);
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
             modEventBus.addListener(MusubiClient::init);
             modEventBus.addListener(MusubiClient::registerItemColors);
             modEventBus.addListener(MusubiClient::registerRenderers);
             modEventBus.addListener(MusubiClient::registerAdditionalModels);
+            modEventBus.addListener(com.sanhiruzu.musubi.client.MusubiKeybinds::register);
         }
     }
 

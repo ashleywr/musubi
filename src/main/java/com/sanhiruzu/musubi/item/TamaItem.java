@@ -68,6 +68,16 @@ public class TamaItem extends Item {
         };
     }
 
+    /** Radius (blocks) within which a worn tama pulls matching dropped items toward the wearer. */
+    public double pickupRange() {
+        return switch (tier) {
+            case 0 -> 3.0;   // bone
+            case 1 -> 4.0;   // iron
+            case 2 -> 5.0;   // silver
+            default -> 7.0;  // orihime
+        };
+    }
+
     /** Maximum total number of items this tama may store. */
     public int storageCapacity() {
         return switch (tier) {
@@ -124,15 +134,28 @@ public class TamaItem extends Item {
             if (!level.isClientSide) {
                 TamaFilter f = tama.getOrDefault(MusubiDataComponents.TAMA_FILTER, TamaFilter.EMPTY);
                 player.displayClientMessage(
-                    Component.translatable("musubi.tama.filter", f.size(), filterCapacity()), true);
+                    Component.translatable("musubi.tama.binds_count", f.size(), filterCapacity()), true);
             }
             return InteractionResultHolder.success(tama);
         }
+        if (!level.isClientSide) attune(player, tama, sample);
+        return InteractionResultHolder.success(tama);
+    }
 
+    /**
+     * Server-side: toggle {@code sample}'s item type on the tama's filter, with feedback.
+     * Shared by the off-hand sneak-use path and the attune keybind.
+     */
+    public static void attune(Player player, ItemStack tama, ItemStack sample) {
+        if (!(tama.getItem() instanceof TamaItem t) || player.level().isClientSide) return;
+        if (sample.isEmpty() || sample.getItem() instanceof TamaItem) {
+            player.displayClientMessage(Component.translatable("musubi.tama.attune_none"), true);
+            return;
+        }
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(sample.getItem());
-        if (id == null) return InteractionResultHolder.pass(tama);
-        if (level.isClientSide) return InteractionResultHolder.success(tama);
+        if (id == null) return;
 
+        Level level = player.level();
         TamaFilter filter = tama.getOrDefault(MusubiDataComponents.TAMA_FILTER, TamaFilter.EMPTY);
         Component name = sample.getHoverName();
         if (filter.contains(id)) {
@@ -140,17 +163,47 @@ public class TamaItem extends Item {
             player.displayClientMessage(Component.translatable("musubi.tama.forgot", name), true);
             level.playSound(null, player.blockPosition(), MusubiSounds.NEEDLE_COLLECT.get(),
                 SoundSource.PLAYERS, 0.4f, 0.7f);
-        } else if (filter.size() >= filterCapacity()) {
+        } else if (filter.size() >= t.filterCapacity()) {
             player.displayClientMessage(
-                Component.translatable("musubi.tama.filter_full", filterCapacity()), true);
-            return InteractionResultHolder.success(tama);
+                Component.translatable("musubi.tama.filter_full", t.filterCapacity()), true);
         } else {
             tama.set(MusubiDataComponents.TAMA_FILTER, filter.with(id));
             player.displayClientMessage(Component.translatable("musubi.tama.taught", name), true);
             level.playSound(null, player.blockPosition(), MusubiSounds.NEEDLE_COLLECT.get(),
                 SoundSource.PLAYERS, 0.4f, 1.2f);
         }
-        return InteractionResultHolder.success(tama);
+    }
+
+    /**
+     * Keybind entry point: attune the held sample to the player's active tama (worn belt first,
+     * then a held tama, then the first in the inventory).
+     */
+    public static void attuneFromKey(Player player) {
+        if (player.level().isClientSide) return;
+        ItemStack tama = findActiveTama(player);
+        if (tama == null) {
+            player.displayClientMessage(Component.translatable("musubi.tama.no_tama"), true);
+            return;
+        }
+        attune(player, tama, sampleFor(player, tama));
+    }
+
+    private static ItemStack findActiveTama(Player player) {
+        ItemStack worn = com.sanhiruzu.musubi.curio.MusubiCurios.findWornTama(player);
+        if (worn != null) return worn;
+        if (player.getMainHandItem().getItem() instanceof TamaItem) return player.getMainHandItem();
+        if (player.getOffhandItem().getItem() instanceof TamaItem) return player.getOffhandItem();
+        for (ItemStack s : player.getInventory().items) {
+            if (s.getItem() instanceof TamaItem) return s;
+        }
+        return null;
+    }
+
+    /** The sample to attune: the main-hand item if it isn't the tama, otherwise the off-hand. */
+    private static ItemStack sampleFor(Player player, ItemStack tama) {
+        ItemStack main = player.getMainHandItem();
+        if (!main.isEmpty() && main != tama && !(main.getItem() instanceof TamaItem)) return main;
+        return player.getOffhandItem();
     }
 
     /** Non-sneak path: pull all filtered items already in the inventory into the tama. */
@@ -189,27 +242,66 @@ public class TamaItem extends Item {
         TamaStorage storage = stack.getOrDefault(MusubiDataComponents.TAMA_STORAGE, TamaStorage.EMPTY);
 
         lines.add(Component.translatable("musubi.tama.tier." + tier).withStyle(ChatFormatting.GRAY));
-        lines.add(Component.translatable("musubi.tama.filter", filter.size(), filterCapacity())
-            .withStyle(ChatFormatting.DARK_GRAY));
-        lines.add(Component.translatable("musubi.tama.stored", storage.total(), storageCapacity())
-            .withStyle(ChatFormatting.DARK_GRAY));
 
-        // List up to four bound types so the player can read what's inside.
-        int shown = 0;
-        for (SkeinContents.VariantEntry e : storage.entries()) {
-            if (shown >= 4) {
-                lines.add(Component.translatable("musubi.tama.more", storage.distinctTypes() - shown)
-                    .withStyle(ChatFormatting.DARK_GRAY));
-                break;
+        // What it's holding — the prominent line, with the per-type breakdown beneath.
+        if (storage.isEmpty()) {
+            lines.add(Component.translatable("musubi.tama.empty").withStyle(ChatFormatting.DARK_GRAY));
+        } else {
+            lines.add(Component.translatable("musubi.tama.stored", storage.total(), storageCapacity())
+                .withStyle(ChatFormatting.AQUA));
+            int shown = 0;
+            for (SkeinContents.VariantEntry e : storage.entries()) {
+                if (shown >= 4) {
+                    lines.add(Component.translatable("musubi.tama.more", storage.distinctTypes() - shown)
+                        .withStyle(ChatFormatting.DARK_GRAY));
+                    break;
+                }
+                lines.add(Component.translatable("musubi.tama.entry", itemName(e.itemId()), e.count())
+                    .withStyle(ChatFormatting.GRAY));
+                shown++;
             }
-            ResourceLocation id = e.itemId();
-            Component name = BuiltInRegistries.ITEM.getOptional(id)
-                .map(it -> (Component) Component.translatable(it.getDescriptionId()))
-                .orElse(Component.literal(id.toString()));
-            lines.add(Component.translatable("musubi.tama.entry", name, e.count())
-                .withStyle(ChatFormatting.DARK_GRAY));
-            shown++;
         }
+
+        // What it's set to bind — shown as type names, clearly labelled (not a bare count).
+        if (filter.size() == 0) {
+            lines.add(Component.translatable("musubi.tama.binds_empty").withStyle(ChatFormatting.DARK_GRAY));
+        } else {
+            Component names = joinNames(filter.items());
+            lines.add(Component.translatable("musubi.tama.binds", filter.size(), filterCapacity(), names)
+                .withStyle(ChatFormatting.DARK_GRAY));
+        }
+
+        // Controls — collapsed behind Shift to keep the tooltip tidy.
+        if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) {
+            for (String key : new String[]{
+                "musubi.tama.help_attune", "musubi.tama.help_key", "musubi.tama.help_sweep",
+                "musubi.tama.help_worn", "musubi.tama.help_unload"}) {
+                lines.add(Component.translatable(key)
+                    .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+            }
+        } else {
+            lines.add(Component.translatable("musubi.tama.help_more")
+                .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+        }
+    }
+
+    /** Display name for an item id, falling back to the raw id. */
+    private static Component itemName(ResourceLocation id) {
+        return BuiltInRegistries.ITEM.getOptional(id)
+            .map(it -> (Component) Component.translatable(it.getDescriptionId()))
+            .orElse(Component.literal(id.toString()));
+    }
+
+    /** Comma-joined list of item names (first 6, then "…"). */
+    private static Component joinNames(List<ResourceLocation> ids) {
+        net.minecraft.network.chat.MutableComponent out = Component.empty();
+        int max = Math.min(ids.size(), 6);
+        for (int i = 0; i < max; i++) {
+            if (i > 0) out.append(", ");
+            out.append(itemName(ids.get(i)));
+        }
+        if (ids.size() > max) out.append(", …");
+        return out;
     }
 
     // ── Bind effect (pickup) ────────────────────────────────────────────────────

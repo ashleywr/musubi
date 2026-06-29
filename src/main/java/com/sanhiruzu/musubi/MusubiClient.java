@@ -32,6 +32,8 @@ public class MusubiClient {
     private static final Map<ResourceLocation, Integer> ITEM_COLOR_CACHE = new HashMap<>();
 
     public static void init(FMLClientSetupEvent event) {
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
+            com.sanhiruzu.musubi.client.MusubiKeybinds::onClientTick);
     }
 
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
@@ -68,7 +70,7 @@ public class MusubiClient {
 
     // ── Rainbow ───────────────────────────────────────────────────────────────
 
-    private static int rainbowColor() {
+    public static int rainbowColor() {
         Minecraft mc = Minecraft.getInstance();
         long tick = (mc.level != null) ? mc.level.getGameTime() : System.currentTimeMillis() / 50L;
         float hue = (tick % 200L) / 200.0f;  // full cycle every 200 ticks (10 s)

@@ -31,16 +31,20 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
 
     private static final ResourceLocation SKEIN_TEX =
         ResourceLocation.fromNamespaceAndPath("musubi", "textures/item/skein.png");
-    private static final RenderType RENDER_TYPE = RenderType.entityCutout(SKEIN_TEX);
+    private static final ResourceLocation SHIMMER_TEX =
+        ResourceLocation.fromNamespaceAndPath("musubi", "textures/item/skein_shimmer.png");
+    private static final RenderType RENDER_TYPE   = RenderType.entityCutout(SKEIN_TEX);
+    private static final RenderType SHIMMER_TYPE  = RenderType.entityTranslucentCull(SHIMMER_TEX);
 
     // Peg X centers in 0–1 block space (model is defined for NORTH facing).
     private static final float[] PEG_X = { 2f/16f, 6f/16f, 10f/16f, 14f/16f };
     private static final float   PEG_Y = 13f/16f;  // top surface = pendulum pivot
     private static final float   PEG_Z = 9f/16f;   // midpoint along peg length (z=4..14)
 
-    private static final float PENDULUM_LEN = 0.26f;
-    private static final float SKEIN_W      = 0.23f;
-    private static final float SKEIN_H      = 0.46f;
+    // Skein dimensions scale linearly with slot fill (0 → 1).
+    private static final float PENDULUM_MIN = 0.18f,  PENDULUM_MAX = 0.30f;
+    private static final float SKEIN_W_MIN  = 0.12f,  SKEIN_W_MAX  = 0.28f;
+    private static final float SKEIN_H_MIN  = 0.20f,  SKEIN_H_MAX  = 0.58f;
 
     private static final float KICK_BASE   = 0.28f;
     private static final float KICK_JITTER = 0.14f;
@@ -72,8 +76,10 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
         if (hanging)     pose.mulPose(Axis.XP.rotationDegrees(180f));
         pose.translate(-0.5, -0.5, -0.5);
 
-        PoseStack.Pose poseEntry = pose.last();
-        VertexConsumer vc = buffers.getBuffer(RENDER_TYPE);
+        PoseStack.Pose poseEntry  = pose.last();
+        VertexConsumer vc         = buffers.getBuffer(RENDER_TYPE);
+        VertexConsumer shimmerVc  = buffers.getBuffer(SHIMMER_TYPE);
+        int rainbowRgb = MusubiClient.rainbowColor() & 0xFFFFFF;
 
         for (int i = 0; i < SpoolRackBlockEntity.SLOTS; i++) {
             int count = be.getSlotCount(i);
@@ -94,39 +100,65 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
             var itemId = be.getSlotItem(i);
             int color  = (itemId != null) ? MusubiClient.getDominantColor(itemId) : 0xC8A864;
 
-            drawSkein(poseEntry, vc, i, p.lerpAngle(partialTick), color);
+            float fill   = Math.min(1f, count / (float) SpoolRackBlockEntity.SLOT_CAPACITY);
+            float pLen   = PENDULUM_MIN + (PENDULUM_MAX - PENDULUM_MIN) * fill;
+            float skeinW = SKEIN_W_MIN  + (SKEIN_W_MAX  - SKEIN_W_MIN)  * fill;
+            float skeinH = SKEIN_H_MIN  + (SKEIN_H_MAX  - SKEIN_H_MIN)  * fill;
+
+            // Ambient sway: slow sine so skeins are never completely still.
+            float ambient = (float)(Math.sin(gameTick * 0.04 + i * 1.5 + partialTick * 0.04) * 0.012);
+            float angle   = p.lerpAngle(partialTick) + ambient;
+
+            drawSkein(poseEntry, vc, shimmerVc, i, angle, color, rainbowRgb, pLen, skeinW, skeinH);
         }
 
         pose.popPose();
     }
 
-    private static void drawSkein(PoseStack.Pose poseEntry, VertexConsumer vc,
-                                  int pegIndex, float angle, int color) {
+    private static void drawSkein(PoseStack.Pose poseEntry,
+                                  VertexConsumer vc, VertexConsumer shimmerVc,
+                                  int pegIndex, float angle, int color, int shimmerRgb,
+                                  float pendulumLen, float skeinW, float skeinH) {
         float cx = PEG_X[pegIndex];
-        float cy = PEG_Y - PENDULUM_LEN * (float) Math.cos(angle);
-        float cz = PEG_Z + PENDULUM_LEN * (float) Math.sin(angle);
+        float cy = PEG_Y - pendulumLen * (float) Math.cos(angle);
+        float cz = PEG_Z + pendulumLen * (float) Math.sin(angle);
 
-        float w2 = SKEIN_W / 2f;
-        float h2 = SKEIN_H / 2f;
+        float w2 = skeinW / 2f;
+        float h2 = skeinH / 2f;
         int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
+        int sr = (shimmerRgb >> 16) & 0xFF, sg = (shimmerRgb >> 8) & 0xFF, sb = shimmerRgb & 0xFF;
 
         Matrix4f m = poseEntry.pose();
 
-        // Front face (−Z normal in north-model space = faces the viewer).
+        // Base layer — front and back faces.
         quad(vc, m, poseEntry,
              cx - w2, cy + h2, cz,   0f, 0f,
              cx + w2, cy + h2, cz,   1f, 0f,
              cx + w2, cy - h2, cz,   1f, 1f,
              cx - w2, cy - h2, cz,   0f, 1f,
-             r, g, b, 0f, 0f, -1f);
+             r, g, b, 255, 0f, 0f, -1f);
+        quad(vc, m, poseEntry,
+             cx - w2, cy - h2, cz,   0f, 1f,
+             cx + w2, cy - h2, cz,   1f, 1f,
+             cx + w2, cy + h2, cz,   1f, 0f,
+             cx - w2, cy + h2, cz,   0f, 0f,
+             r, g, b, 255, 0f, 0f, 1f);
 
-        // Back face (reversed winding, +Z normal) — visible from inside the room.
-        quad(vc, m, poseEntry,
-             cx - w2, cy - h2, cz,   0f, 1f,
-             cx + w2, cy - h2, cz,   1f, 1f,
-             cx + w2, cy + h2, cz,   1f, 0f,
-             cx - w2, cy + h2, cz,   0f, 0f,
-             r, g, b, 0f, 0f, 1f);
+        // Shimmer overlay — offset slightly toward each face's viewer to avoid z-fighting.
+        float czF = cz - 0.001f;
+        float czB = cz + 0.001f;
+        quad(shimmerVc, m, poseEntry,
+             cx - w2, cy + h2, czF,  0f, 0f,
+             cx + w2, cy + h2, czF,  1f, 0f,
+             cx + w2, cy - h2, czF,  1f, 1f,
+             cx - w2, cy - h2, czF,  0f, 1f,
+             sr, sg, sb, 160, 0f, 0f, -1f);
+        quad(shimmerVc, m, poseEntry,
+             cx - w2, cy - h2, czB,  0f, 1f,
+             cx + w2, cy - h2, czB,  1f, 1f,
+             cx + w2, cy + h2, czB,  1f, 0f,
+             cx - w2, cy + h2, czB,  0f, 0f,
+             sr, sg, sb, 160, 0f, 0f, 1f);
     }
 
     private static void quad(VertexConsumer vc, Matrix4f m, PoseStack.Pose pose,
@@ -134,16 +166,16 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
             float x1, float y1, float z1, float u1, float v1,
             float x2, float y2, float z2, float u2, float v2,
             float x3, float y3, float z3, float u3, float v3,
-            int r, int g, int b,
+            int r, int g, int b, int a,
             float nx, float ny, float nz) {
         // 0xF000F0 = LightTexture.FULL_BRIGHT packed value
-        vc.addVertex(m, x0, y0, z0).setColor(r, g, b, 255).setUv(u0, v0)
+        vc.addVertex(m, x0, y0, z0).setColor(r, g, b, a).setUv(u0, v0)
           .setOverlay(OverlayTexture.NO_OVERLAY).setLight(0xF000F0).setNormal(pose, nx, ny, nz);
-        vc.addVertex(m, x1, y1, z1).setColor(r, g, b, 255).setUv(u1, v1)
+        vc.addVertex(m, x1, y1, z1).setColor(r, g, b, a).setUv(u1, v1)
           .setOverlay(OverlayTexture.NO_OVERLAY).setLight(0xF000F0).setNormal(pose, nx, ny, nz);
-        vc.addVertex(m, x2, y2, z2).setColor(r, g, b, 255).setUv(u2, v2)
+        vc.addVertex(m, x2, y2, z2).setColor(r, g, b, a).setUv(u2, v2)
           .setOverlay(OverlayTexture.NO_OVERLAY).setLight(0xF000F0).setNormal(pose, nx, ny, nz);
-        vc.addVertex(m, x3, y3, z3).setColor(r, g, b, 255).setUv(u3, v3)
+        vc.addVertex(m, x3, y3, z3).setColor(r, g, b, a).setUv(u3, v3)
           .setOverlay(OverlayTexture.NO_OVERLAY).setLight(0xF000F0).setNormal(pose, nx, ny, nz);
     }
 }

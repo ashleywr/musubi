@@ -55,13 +55,14 @@ public class InventoryAddMixin {
             return;
         }
 
-        // (1) Bind-on-pickup — into any Tama in the inventory, or one worn in a curio slot.
+        // (1) Bind-on-pickup. The worn belt Tama gets first pick, then inventory Tamas in slot
+        //     order; each fills to capacity before overflow spills to the next.
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (id == null) return;
-        for (ItemStack inv : items) {
-            if (!(inv.getItem() instanceof TamaItem)) continue;
-            if (!TamaItem.accepts(inv, id)) continue;
-            int deposited = TamaItem.depositInto(inv, id, stack.getCount());
+
+        ItemStack worn = com.sanhiruzu.musubi.curio.MusubiCurios.findWornTama(player);
+        if (worn != null && TamaItem.accepts(worn, id)) {
+            int deposited = TamaItem.depositInto(worn, id, stack.getCount());
             if (deposited > 0) {
                 stack.shrink(deposited);
                 TamaItem.playBindEffect(player, id);
@@ -72,10 +73,10 @@ public class InventoryAddMixin {
             }
         }
 
-        // Worn Tama (belt curio) — so it gathers without occupying the hand or a slot.
-        ItemStack worn = com.sanhiruzu.musubi.curio.MusubiCurios.findWornTama(player);
-        if (worn != null && TamaItem.accepts(worn, id)) {
-            int deposited = TamaItem.depositInto(worn, id, stack.getCount());
+        for (ItemStack inv : items) {
+            if (!(inv.getItem() instanceof TamaItem)) continue;
+            if (!TamaItem.accepts(inv, id)) continue;
+            int deposited = TamaItem.depositInto(inv, id, stack.getCount());
             if (deposited > 0) {
                 stack.shrink(deposited);
                 TamaItem.playBindEffect(player, id);
