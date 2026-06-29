@@ -73,6 +73,19 @@ public class SpoolRackBlockEntity extends BlockEntity {
     }
 
     /**
+     * Returns true if this rack has space for at least one more item of the given type —
+     * either in an existing slot or in an empty slot. Used by MarudaiBlockEntity for
+     * IItemHandler simulate checks so hoppers stop pushing when racks are full.
+     */
+    public boolean canAccept(ResourceLocation itemId) {
+        for (int i = 0; i < SLOTS; i++) {
+            if (itemId.equals(itemIds[i]) && counts[i] < SLOT_CAPACITY) return true;
+            if (itemIds[i] == null) return true;
+        }
+        return false;
+    }
+
+    /**
      * Public entry-point for the Marudai to deposit individual items one at a time.
      * Returns the number actually deposited (0 if no space).
      */

@@ -25,6 +25,8 @@ public class Musubi {
         MusubiBlocks.BLOCK_ITEMS.register(modEventBus);
         MusubiBlockEntities.BLOCK_ENTITIES.register(modEventBus);
 
+        modEventBus.addListener(MusubiCapabilities::register);
+
         if (FMLEnvironment.dist == Dist.CLIENT) {
             modEventBus.addListener(MusubiClient::init);
         }
