@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import com.sanhiruzu.musubi.block.MusubiBlocks;
 import com.sanhiruzu.musubi.blockentity.MusubiBlockEntities;
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
+import com.sanhiruzu.musubi.item.MusubiCreativeTabs;
 import com.sanhiruzu.musubi.item.MusubiItems;
 import com.sanhiruzu.musubi.loot.MusubiLootModifiers;
 import com.sanhiruzu.musubi.sound.MusubiSounds;
@@ -42,6 +43,7 @@ public class Musubi {
         MusubiBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         MusubiSounds.SOUNDS.register(modEventBus);
         MusubiLootModifiers.LOOT_MODIFIERS.register(modEventBus);
+        MusubiCreativeTabs.TABS.register(modEventBus);
 
         modEventBus.addListener(MusubiCapabilities::register);
         modEventBus.addListener(Musubi::commonSetup);
