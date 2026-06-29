@@ -2,6 +2,8 @@ package com.sanhiruzu.musubi.item;
 
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -18,6 +20,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -89,6 +92,15 @@ public class NeedleItem extends Item {
             stack.hurtAndBreak(1, (ServerLevel) level,
                 player instanceof ServerPlayer sp ? sp : null, item -> {});
 
+            // Materialisation burst — the skein has just formed.
+            ItemStack skeinStack = findMatchingSkein(player, groupKey);
+            int burstColor = 0xE8D8B0;
+            if (skeinStack != null) {
+                SkeinContents c = skeinStack.get(MusubiDataComponents.SKEIN_CONTENTS);
+                if (c != null) burstColor = c.displayColor();
+            }
+            spawnBurstParticles((ServerLevel) level, player, burstColor);
+
         } else if (ticksHeld > STARTUP_TICKS && (ticksHeld - STARTUP_TICKS) % DRAIN_INTERVAL == 0) {
             // Phase 2 drain tick: move one off-hand item into the skein.
             ItemStack offhand = player.getOffhandItem();
@@ -97,7 +109,17 @@ public class NeedleItem extends Item {
                 return;
             }
             String groupKey = computeGroupKey(offhand);
+
+            // Read displayColor before drain (stable across the update).
+            int drainColor = 0xE8D8B0;
+            ItemStack skeinStack = findMatchingSkein(player, groupKey);
+            if (skeinStack != null) {
+                SkeinContents c = skeinStack.get(MusubiDataComponents.SKEIN_CONTENTS);
+                if (c != null) drainColor = c.displayColor();
+            }
+
             drainOneItem(player, groupKey, offhand);
+            spawnDrainParticles((ServerLevel) level, player, drainColor);
         }
     }
 
@@ -233,6 +255,54 @@ public class NeedleItem extends Item {
             }
         }
         return null;
+    }
+
+    // ── Particle effects ──────────────────────────────────────────────────────
+
+    /**
+     * One-shot burst when the skein first materialises at Phase 2 entry.
+     * Larger colored dust + white enchanted sparkles radiate outward.
+     */
+    private static void spawnBurstParticles(ServerLevel level, Player player, int color) {
+        Vector3f rgb = unpackRgb(color);
+        double px = player.getX(), py = player.getY() + 1.1, pz = player.getZ();
+
+        // Large colored silk dust — expands outward from the player.
+        level.sendParticles(new DustParticleOptions(rgb, 2.4f),
+            px, py, pz, 12, 0.45, 0.35, 0.45, 0.06);
+
+        // White enchanted sparkles for the "magic" flash.
+        level.sendParticles(ParticleTypes.ENCHANTED_HIT,
+            px, py, pz, 10, 0.35, 0.3, 0.35, 0.12);
+
+        // A pair of END_ROD particles shoot straight up, trailing the thread rising.
+        level.sendParticles(ParticleTypes.END_ROD,
+            px, py, pz, 2, 0.1, 0.05, 0.1, 0.18);
+    }
+
+    /**
+     * Small repeating pulse emitted on each drain tick as items fold into silk.
+     * Subtle enough not to overwhelm over dozens of ticks in a row.
+     */
+    private static void spawnDrainParticles(ServerLevel level, Player player, int color) {
+        Vector3f rgb = unpackRgb(color);
+        double px = player.getX(), py = player.getY() + 1.05, pz = player.getZ();
+
+        // Two small colored silk motes — rise gently and fade.
+        level.sendParticles(new DustParticleOptions(rgb, 1.4f),
+            px, py, pz, 2, 0.12, 0.12, 0.12, 0.04);
+
+        // One white sparkle every other drain tick for a subtle twinkle.
+        level.sendParticles(ParticleTypes.ENCHANTED_HIT,
+            px, py, pz, 1, 0.15, 0.1, 0.15, 0.06);
+    }
+
+    private static Vector3f unpackRgb(int packed) {
+        return new Vector3f(
+            ((packed >> 16) & 0xFF) / 255f,
+            ((packed >>  8) & 0xFF) / 255f,
+            ( packed        & 0xFF) / 255f
+        );
     }
 
     /**

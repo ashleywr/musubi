@@ -38,9 +38,9 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
     private static final float   PEG_Y = 13f/16f;  // top surface = pendulum pivot
     private static final float   PEG_Z = 9f/16f;   // midpoint along peg length (z=4..14)
 
-    private static final float PENDULUM_LEN = 0.19f;
-    private static final float SKEIN_W      = 0.22f;
-    private static final float SKEIN_H      = 0.14f;
+    private static final float PENDULUM_LEN = 0.26f;
+    private static final float SKEIN_W      = 0.23f;
+    private static final float SKEIN_H      = 0.46f;
 
     private static final float KICK_BASE   = 0.28f;
     private static final float KICK_JITTER = 0.14f;
