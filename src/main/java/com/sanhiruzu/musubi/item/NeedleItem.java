@@ -150,6 +150,13 @@ public class NeedleItem extends Item {
     private void ensureSkein(Player player, String groupKey) {
         if (findMatchingSkein(player, groupKey) != null) return;
 
+        if (!consumeFromInventory(player, MusubiItems.SILK_THREAD.get())) {
+            player.displayClientMessage(
+                Component.translatable("musubi.sewing.no_silk"), true);
+            player.stopUsingItem();
+            return;
+        }
+
         int color = colorFromGroupKey(groupKey);
         SkeinContents initial = new SkeinContents(tier, groupKey, 0, List.of(), color, 0, Optional.empty());
         ItemStack skein = new ItemStack(MusubiItems.SKEIN.get());
@@ -158,6 +165,16 @@ public class NeedleItem extends Item {
         if (!player.getInventory().add(skein)) {
             player.drop(skein, false);
         }
+    }
+
+    private static boolean consumeFromInventory(Player player, net.minecraft.world.item.Item item) {
+        for (ItemStack s : player.getInventory().items) {
+            if (s.is(item)) {
+                s.shrink(1);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

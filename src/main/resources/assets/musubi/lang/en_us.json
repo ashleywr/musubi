@@ -7,6 +7,7 @@
   "item.musubi.orihime_needle": "Orihime Needle",
   "item.musubi.skein":          "Skein",
   "item.musubi.fiber_bundle":   "Fiber Bundle",
+  "item.musubi.silk_thread":    "Silk Thread",
 
   "block.musubi.spinning_wheel": "Spinning Wheel",
   "block.musubi.marudai":        "Marudai",
@@ -23,5 +24,6 @@
   "musubi.skein.contents_tag":  "%s — %s items",
   "musubi.skein.contents_item": "%s × %s",
   "musubi.skein.empty":         "Empty skein",
-  "musubi.sewing.rejected":     "The needle cannot read compound items"
+  "musubi.sewing.rejected":     "The needle cannot read compound items",
+  "musubi.sewing.no_silk":      "Sewing requires silk thread"
 }

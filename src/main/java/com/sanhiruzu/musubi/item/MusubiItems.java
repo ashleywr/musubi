@@ -31,4 +31,7 @@ public class MusubiItems {
 
     public static final DeferredHolder<Item, FiberBundleItem> FIBER_BUNDLE =
         ITEMS.register("fiber_bundle", () -> new FiberBundleItem(new Item.Properties().stacksTo(64)));
+
+    public static final DeferredHolder<Item, Item> SILK_THREAD =
+        ITEMS.register("silk_thread", () -> new Item(new Item.Properties().stacksTo(64)));
 }
