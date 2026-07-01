@@ -14,9 +14,10 @@ import java.util.UUID;
 /**
  * DataComponent stored on every skein item.
  *
- * groupKey is a tag ID (e.g. "minecraft:logs") for bone/silver needles, or an item ID
- * (e.g. "minecraft:oak_log") for iron/orihime needles. Two skeins merge only when both
- * needleTier and groupKey match.
+ * groupKey is the merge family key. For ordinary skeins it may be a tag ID
+ * (e.g. "minecraft:logs") or an item ID (e.g. "minecraft:oak_log"); for rack-stored
+ * skeins it may be a color-family key. Two skeins merge only when both needleTier and
+ * groupKey match.
  *
  * variants tracks per-item counts in FIFO order for accurate retrieval. count is the
  * sum of all variant counts, cached here to avoid summing on every tooltip render.

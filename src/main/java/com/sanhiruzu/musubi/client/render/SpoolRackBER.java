@@ -3,65 +3,57 @@ package com.sanhiruzu.musubi.client.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import com.sanhiruzu.musubi.MusubiClient;
 import com.sanhiruzu.musubi.block.SpoolRackBlock;
 import com.sanhiruzu.musubi.blockentity.SpoolRackBlockEntity;
+import com.sanhiruzu.musubi.component.SkeinContents;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
- * Renders colored silk skeins hanging from each occupied peg on a Spool Rack.
+ * Renders hanging yarn hanks on each peg of a Spool Rack.
  *
- * Each occupied slot gets a skein quad placed below the peg's midpoint,
- * swinging on a simulated pendulum in the YZ plane. A brief kick is applied
- * when a new skein is deposited. Skeins render at full brightness so they
- * read clearly even in unlit storage rooms.
+ * A 2×2 peg grid displays colorful hanging hanks on pegs.
+ * Each hank is tinted from the stored skein contents so the visual stays aligned with
+ * the data carried when the skein is moved off the rack.
  */
 public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
 
     private static final ResourceLocation SKEIN_TEX =
         ResourceLocation.fromNamespaceAndPath("musubi", "textures/item/skein.png");
-    private static final ResourceLocation SHIMMER_TEX =
-        ResourceLocation.fromNamespaceAndPath("musubi", "textures/item/skein_shimmer.png");
-    private static final ResourceLocation EDGE_TEX =
-        ResourceLocation.fromNamespaceAndPath("musubi", "textures/item/skein_depth.png");
-    private static final RenderType RENDER_TYPE   = RenderType.entityCutout(SKEIN_TEX);
-    private static final RenderType SHIMMER_TYPE  = RenderType.entityTranslucentCull(SHIMMER_TEX);
-    private static final RenderType EDGE_TYPE     = RenderType.entityCutout(EDGE_TEX);
+    private static final RenderType RENDER_TYPE = RenderType.entityCutout(SKEIN_TEX);
 
-    // Peg X centers in 0–1 block space (model is defined for NORTH facing).
-    private static final float[] PEG_X = { 2f/16f, 6f/16f, 10f/16f, 14f/16f };
-    private static final float   PEG_Y = 13f/16f;  // top surface = pendulum pivot
-    private static final float   PEG_Z = 9f/16f;   // midpoint along peg length (z=4..14)
+    // 2×2 peg grid: [top-left, top-right, bottom-left, bottom-right]
+    // Pegs extend from z=8 to z=14 (outward from wall)
+    private static final float[] PEG_X = { 4f/16f, 12f/16f, 4f/16f, 12f/16f };
+    private static final float[] PEG_Y = { 13f/16f, 13f/16f, 11f/16f, 11f/16f };
+    private static final float[] PEG_Z = { 11f/16f, 11f/16f, 11f/16f, 11f/16f };
 
-    // The rack can hold thousands of items, but the display needs to read at
-    // ordinary stack sizes. We therefore map count to a visual fullness curve
-    // and then switch the silhouette from loop -> hank -> bundled strands.
     private static final float VISUAL_FULL_COUNT = 256f;
-    private static final float LOOP_STAGE_END    = 0.34f;
-    private static final float HANK_STAGE_END    = 0.76f;
-    private static final float TAU               = (float) (Math.PI * 2.0);
+    private static final float Z_STACK_OFFSET = 0.025f; // offset between stacked hanks
 
-    private static final float KICK_BASE   = 0.28f;
-    private static final float KICK_JITTER = 0.14f;
+    // Tier 0: Feather silk (delicate, lightweight)
+    private static final float FEATHER_WIDTH = 0.10f;
+    private static final float FEATHER_HEIGHT = 0.14f;
+    private static final float FEATHER_ROPE = 0.012f;
+    private static final int FEATHER_SEGMENTS = 10;
 
-    private record SkeinRenderData(int pegIndex, float angle, int color, int shimmerRgb,
-                                   float pendulumLen, float skeinW, float skeinH, float skeinD,
-                                   int strandCount) {}
+    // Tier 1: Crinkle silk (medium weight, standard)
+    private static final float CRINKLE_WIDTH = 0.14f;
+    private static final float CRINKLE_HEIGHT = 0.18f;
+    private static final float CRINKLE_ROPE = 0.016f;
+    private static final int CRINKLE_SEGMENTS = 12;
 
-    /** Accumulated per-position pendulum state. Entries are never evicted;
-     *  the leak is negligible (a few hundred bytes per rack ever placed). */
-    private static final Map<BlockPos, SkeinPendulum[]> PENDULUMS = new HashMap<>();
+    // Tier 2: Rinzu silk (heavy, ornate, substantial)
+    private static final float RINZU_WIDTH = 0.18f;
+    private static final float RINZU_HEIGHT = 0.22f;
+    private static final float RINZU_ROPE = 0.020f;
+    private static final int RINZU_SEGMENTS = 14;
 
     public SpoolRackBER(BlockEntityRendererProvider.Context ctx) { }
 
@@ -70,15 +62,10 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
                        MultiBufferSource buffers, int combinedLight, int combinedOverlay) {
 
         if (be.getLevel() == null) return;
-        long gameTick = be.getLevel().getGameTime();
-
-        SkeinPendulum[] pendulums = PENDULUMS.computeIfAbsent(
-            be.getBlockPos(), k -> new SkeinPendulum[SpoolRackBlockEntity.SLOTS]);
 
         Direction facing  = be.getBlockState().getValue(SpoolRackBlock.FACING);
         boolean   hanging = be.getBlockState().getValue(SpoolRackBlock.HANGING);
 
-        // Mirror the facing rotation the blockstates JSON applies to the static model.
         pose.pushPose();
         pose.translate(0.5, 0.5, 0.5);
         int yDeg = switch (facing) { case SOUTH -> 180; case WEST -> 270; case EAST -> 90; default -> 0; };
@@ -86,287 +73,119 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
         if (hanging)     pose.mulPose(Axis.XP.rotationDegrees(180f));
         pose.translate(-0.5, -0.5, -0.5);
 
-        PoseStack.Pose poseEntry  = pose.last();
-        int rainbowRgb = MusubiClient.rainbowColor() & 0xFFFFFF;
-        SkeinRenderData[] renderData = new SkeinRenderData[SpoolRackBlockEntity.SLOTS];
+        PoseStack.Pose poseEntry = pose.last();
+        VertexConsumer vc = buffers.getBuffer(RENDER_TYPE);
+        Matrix4f m = poseEntry.pose();
 
         for (int i = 0; i < SpoolRackBlockEntity.SLOTS; i++) {
-            int count = be.getSlotCount(i);
-            if (pendulums[i] == null) pendulums[i] = new SkeinPendulum();
-            SkeinPendulum p = pendulums[i];
+            SkeinContents contents = be.getSlotContents(i);
+            if (contents == null || contents.count() == 0) continue;
 
-            // Deposit detected → kick with random sign so adjacent skeins sway independently.
-            if (count > p.lastCount) {
-                float sign   = (Math.random() > 0.5) ? 1f : -1f;
-                float jitter = (float)(Math.random() * KICK_JITTER);
-                p.kick(sign * (KICK_BASE + jitter));
-            }
-            p.lastCount = count;
-            p.updateTo(gameTick);
+            int color = contents.displayColor();
+            int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
+            int tier = contents.needleTier();
+            int count = contents.count();
 
-            if (count == 0) continue;
-
-            var itemId = be.getSlotItem(i);
-            int color  = (itemId != null) ? MusubiClient.getDominantColor(itemId) : 0xC8A864;
-
+            // Map count to 1-4 hanks based on fullness
             float storageFill = Math.min(1f, count / VISUAL_FULL_COUNT);
-            float visualFill = (float) Math.sqrt(storageFill);
-            int stage = visualFill < LOOP_STAGE_END ? 0 : (visualFill < HANK_STAGE_END ? 1 : 2);
-            float stageMix = switch (stage) {
-                case 0 -> visualFill / LOOP_STAGE_END;
-                case 1 -> (visualFill - LOOP_STAGE_END) / (HANK_STAGE_END - LOOP_STAGE_END);
-                default -> (visualFill - HANK_STAGE_END) / (1f - HANK_STAGE_END);
+            int hankCount = (int) Math.ceil(storageFill * 4f);
+
+            // Scale loop size slightly based on count (fuller = bigger loop)
+            float sizeScale = switch (hankCount) {
+                case 1 -> 0.75f;
+                case 2 -> 0.9f;
+                case 3 -> 1.0f;
+                default -> 1.1f;
             };
 
-            float pLen = switch (stage) {
-                case 0 -> lerp(0.34f, 0.28f, stageMix);
-                case 1 -> lerp(0.28f, 0.31f, stageMix);
-                default -> lerp(0.29f, 0.33f, stageMix);
-            };
-            float skeinW = switch (stage) {
-                case 0 -> lerp(0.15f, 0.22f, stageMix);
-                case 1 -> lerp(0.24f, 0.30f, stageMix);
-                default -> lerp(0.30f, 0.37f, stageMix);
-            };
-            float skeinH = switch (stage) {
-                case 0 -> lerp(0.28f, 0.40f, stageMix);
-                case 1 -> lerp(0.42f, 0.54f, stageMix);
-                default -> lerp(0.56f, 0.68f, stageMix);
-            };
-            float skeinD = switch (stage) {
-                case 0 -> lerp(0.018f, 0.024f, stageMix);
-                case 1 -> lerp(0.028f, 0.035f, stageMix);
-                default -> lerp(0.040f, 0.050f, stageMix);
-            };
-            int strandCount = stage == 0 ? 1 : (stage == 1 ? 3 : 5);
+            float cx = PEG_X[i];
+            float cy = PEG_Y[i] - getTierHeight(tier) / 2f;
+            float czBase = PEG_Z[i];
 
-            // Ambient sway: slow sine so skeins are never completely still.
-            float ambient = (float)(Math.sin(gameTick * 0.04 + i * 1.5 + partialTick * 0.04) * 0.012);
-            float angle   = p.lerpAngle(partialTick) + ambient;
-
-            renderData[i] = new SkeinRenderData(i, angle, color, rainbowRgb, pLen, skeinW, skeinH, skeinD, strandCount);
-        }
-
-        VertexConsumer vc = buffers.getBuffer(RENDER_TYPE);
-        for (SkeinRenderData data : renderData) {
-            if (data == null) continue;
-            drawSkeinFaces(poseEntry, vc, data);
-        }
-
-        VertexConsumer edgeVc = buffers.getBuffer(EDGE_TYPE);
-        for (SkeinRenderData data : renderData) {
-            if (data == null) continue;
-            drawSkeinEdges(poseEntry, edgeVc, data);
-        }
-
-        VertexConsumer shimmerVc  = buffers.getBuffer(SHIMMER_TYPE);
-        for (SkeinRenderData data : renderData) {
-            if (data == null) continue;
-            drawSkeinShimmer(poseEntry, shimmerVc, data);
+            // Stack hanks with slight Z offset for visual depth
+            for (int h = 0; h < hankCount; h++) {
+                float cz = czBase + (h - (hankCount - 1) / 2f) * Z_STACK_OFFSET;
+                drawHankLoop(vc, m, poseEntry, cx, cy, cz, tier, sizeScale, r, g, b);
+            }
         }
 
         pose.popPose();
     }
 
-    private static void drawSkeinFaces(PoseStack.Pose poseEntry, VertexConsumer vc, SkeinRenderData data) {
-        float cx = PEG_X[data.pegIndex()];
-        float cy = PEG_Y - data.pendulumLen() * (float) Math.cos(data.angle());
-        float cz = PEG_Z + data.pendulumLen() * (float) Math.sin(data.angle());
+    private static void drawHankLoop(VertexConsumer vc, Matrix4f m, PoseStack.Pose pose,
+                                     float cx, float cy, float cz, int tier, float sizeScale,
+                                     int r, int g, int b) {
+        int a = 255;
+        float tau = (float) (Math.PI * 2);
 
-        int strands = data.strandCount();
-        int color = data.color();
-        int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
+        float bundleLength = getTierHeight(tier) * sizeScale;
+        float bundleRadius = getTierWidth(tier) * sizeScale * 0.15f;
+        float ropeThick = getTierRopeThickness(tier);
+        int segments = getTierSegments(tier);
+        int coilTurns = 3 + (int)(sizeScale * 2f);
 
-        Matrix4f m = poseEntry.pose();
+        // Render as hanging coil bundle
+        float rt2 = ropeThick / 2f;
+        for (int i = 0; i < segments; i++) {
+            float t0 = i / (float) segments;
+            float t1 = (i + 1) / (float) segments;
 
-        float baseBundleW = data.skeinW();
-        float baseBundleH = data.skeinH();
-        float baseBundleD = data.skeinD();
-        float widthScale = strands == 1 ? 1.0f : (strands == 3 ? 0.60f : 0.43f);
-        float heightScale = strands == 1 ? 1.0f : (strands == 3 ? 0.92f : 0.84f);
-        float depthScale = strands == 1 ? 1.0f : (strands == 3 ? 1.08f : 1.12f);
-        float ringX = strands == 1 ? 0.0f : (strands == 3 ? 0.016f : 0.022f);
-        float ringY = strands == 1 ? 0.0f : (strands == 3 ? 0.028f : 0.040f);
-        float ringZ = strands == 1 ? 0.0f : (strands == 3 ? 0.010f : 0.014f);
+            // Parametric coil: spirals down from peg
+            float angle0 = t0 * tau * coilTurns;
+            float angle1 = t1 * tau * coilTurns;
 
-        for (int strand = 0; strand < strands; strand++) {
-            float t = (strands == 1) ? 0.5f : strand / (float) (strands - 1);
-            float phase = t * TAU + data.angle() * 0.55f + data.pegIndex() * 0.8f;
-            float twist = (float) Math.sin(phase * 1.3f);
-            float curl = (float) Math.cos(phase);
-            float strandX = curl * ringX;
-            float strandY = -Math.abs(twist) * ringY - (strands == 1 ? 0.0f : 0.010f);
-            float strandZ = twist * ringZ;
-            float strandW = baseBundleW * widthScale;
-            float strandH = baseBundleH * heightScale;
-            float strandD = baseBundleD * depthScale;
-            float w2 = strandW / 2f;
-            float h2 = strandH / 2f;
-            float d2 = strandD / 2f;
-            float squeeze = strands == 1 ? 1f : 1f - 0.08f * Math.abs(twist);
-            float lift = strands == 1 ? 0f : 0.012f * (1f - Math.abs(twist));
-            int alpha = strands == 1 ? 255 : (strand == 0 || strand == strands - 1 ? 210 : 245);
+            float x0 = cx + bundleRadius * (float) Math.cos(angle0);
+            float y0 = cy - t0 * bundleLength;
+            float z0 = cz + bundleRadius * (float) Math.sin(angle0);
 
-            drawRibbonFaces(vc, m, poseEntry,
-                cx + strandX,
-                cy + strandY + lift,
-                cz + strandZ,
-                w2 * squeeze,
-                h2 * squeeze,
-                d2,
-                r, g, b, alpha);
+            float x1 = cx + bundleRadius * (float) Math.cos(angle1);
+            float y1 = cy - t1 * bundleLength;
+            float z1 = cz + bundleRadius * (float) Math.sin(angle1);
+
+            // Calculate normal for shading along the coil
+            float nx = (float) Math.cos(angle0 + tau / 4f);
+            float nz = (float) Math.sin(angle0 + tau / 4f);
+
+            // Create quad ribbon segment (rope thickness)
+            quad(vc, m, pose,
+                 x0, y0 + rt2, z0,   0f, 0f,
+                 x1, y1 + rt2, z1,   1f, 0f,
+                 x1, y1 - rt2, z1,   1f, 1f,
+                 x0, y0 - rt2, z0,   0f, 1f,
+                 r, g, b, a, nx, 0f, nz);
         }
     }
 
-    private static void drawSkeinEdges(PoseStack.Pose poseEntry, VertexConsumer edgeVc, SkeinRenderData data) {
-        float cx = PEG_X[data.pegIndex()];
-        float cy = PEG_Y - data.pendulumLen() * (float) Math.cos(data.angle());
-        float cz = PEG_Z + data.pendulumLen() * (float) Math.sin(data.angle());
-
-        int strands = data.strandCount();
-        int color = data.color();
-        int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
-
-        Matrix4f m = poseEntry.pose();
-
-        float baseBundleW = data.skeinW();
-        float baseBundleH = data.skeinH();
-        float baseBundleD = data.skeinD();
-        float widthScale = strands == 1 ? 1.0f : (strands == 3 ? 0.60f : 0.43f);
-        float heightScale = strands == 1 ? 1.0f : (strands == 3 ? 0.92f : 0.84f);
-        float depthScale = strands == 1 ? 1.0f : (strands == 3 ? 1.08f : 1.12f);
-        float ringX = strands == 1 ? 0.0f : (strands == 3 ? 0.016f : 0.022f);
-        float ringY = strands == 1 ? 0.0f : (strands == 3 ? 0.028f : 0.040f);
-        float ringZ = strands == 1 ? 0.0f : (strands == 3 ? 0.010f : 0.014f);
-
-        for (int strand = 0; strand < strands; strand++) {
-            float t = (strands == 1) ? 0.5f : strand / (float) (strands - 1);
-            float phase = t * TAU + data.angle() * 0.55f + data.pegIndex() * 0.8f;
-            float twist = (float) Math.sin(phase * 1.3f);
-            float curl = (float) Math.cos(phase);
-            float strandX = curl * ringX;
-            float strandY = -Math.abs(twist) * ringY - (strands == 1 ? 0.0f : 0.010f);
-            float strandZ = twist * ringZ;
-            float strandW = baseBundleW * widthScale;
-            float strandH = baseBundleH * heightScale;
-            float strandD = baseBundleD * depthScale;
-            float w2 = strandW / 2f;
-            float h2 = strandH / 2f;
-            float d2 = strandD / 2f;
-            float squeeze = strands == 1 ? 1f : 1f - 0.08f * Math.abs(twist);
-            float lift = strands == 1 ? 0f : 0.012f * (1f - Math.abs(twist));
-            int alpha = strands == 1 ? 160 : (strand == 0 || strand == strands - 1 ? 100 : 145);
-
-            // Edges give the skein depth so the bundle doesn't read as a flat billboard.
-            drawEdgeBox(edgeVc, m, poseEntry, cx + strandX, cy + strandY + lift, cz + strandZ,
-                w2 * squeeze, h2 * squeeze, d2, (int) (r * 0.72f), (int) (g * 0.72f), (int) (b * 0.72f), alpha);
-        }
+    private static float getTierWidth(int tier) {
+        return switch (tier) {
+            case 0 -> FEATHER_WIDTH;
+            case 2 -> RINZU_WIDTH;
+            default -> CRINKLE_WIDTH;
+        };
     }
 
-    private static void drawSkeinShimmer(PoseStack.Pose poseEntry, VertexConsumer shimmerVc, SkeinRenderData data) {
-        float cx = PEG_X[data.pegIndex()];
-        float cy = PEG_Y - data.pendulumLen() * (float) Math.cos(data.angle());
-        float cz = PEG_Z + data.pendulumLen() * (float) Math.sin(data.angle());
-
-        int strands = data.strandCount();
-        int shimmerRgb = data.shimmerRgb();
-        int sr = (shimmerRgb >> 16) & 0xFF, sg = (shimmerRgb >> 8) & 0xFF, sb = shimmerRgb & 0xFF;
-
-        Matrix4f m = poseEntry.pose();
-
-        float ringX = strands == 1 ? 0.0f : (strands == 3 ? 0.016f : 0.022f);
-        float ringY = strands == 1 ? 0.0f : (strands == 3 ? 0.028f : 0.040f);
-        float ringZ = strands == 1 ? 0.0f : (strands == 3 ? 0.010f : 0.014f);
-        float widthScale = strands == 1 ? 1.0f : (strands == 3 ? 0.60f : 0.43f);
-        float heightScale = strands == 1 ? 1.0f : (strands == 3 ? 0.92f : 0.84f);
-        float depthScale = strands == 1 ? 1.0f : (strands == 3 ? 1.08f : 1.12f);
-
-        for (int strand = 0; strand < strands; strand++) {
-            float t = (strands == 1) ? 0.5f : strand / (float) (strands - 1);
-            float phase = t * TAU + data.angle() * 0.55f + data.pegIndex() * 0.8f;
-            float twist = (float) Math.sin(phase * 1.3f);
-            float curl = (float) Math.cos(phase);
-            float strandX = curl * ringX;
-            float strandY = -Math.abs(twist) * ringY - (strands == 1 ? 0.0f : 0.010f);
-            float strandZ = twist * ringZ;
-            float strandW = data.skeinW() * widthScale;
-            float strandH = data.skeinH() * heightScale;
-            float strandD = data.skeinD() * depthScale;
-            float w2 = strandW / 2f;
-            float h2 = strandH / 2f;
-            float d2 = strandD / 2f;
-            float squeeze = strands == 1 ? 1f : 1f - 0.08f * Math.abs(twist);
-            float lift = strands == 1 ? 0f : 0.012f * (1f - Math.abs(twist));
-            int alpha = strands == 1 ? 160 : (strand == 0 || strand == strands - 1 ? 100 : 145);
-
-            // Shimmer sits on each strand so the bundle reads as woven mass, not flat foil.
-            float czF = cz + strandZ + d2 - 0.001f;
-            float czB = cz + strandZ - d2 + 0.001f;
-            quad(shimmerVc, m, poseEntry,
-                 cx + strandX - w2 * squeeze, cy + strandY + lift + h2 * squeeze, czF,  0f, 0f,
-                 cx + strandX + w2 * squeeze, cy + strandY + lift + h2 * squeeze, czF,  1f, 0f,
-                 cx + strandX + w2 * squeeze, cy + strandY + lift - h2 * squeeze, czF,  1f, 1f,
-                 cx + strandX - w2 * squeeze, cy + strandY + lift - h2 * squeeze, czF,  0f, 1f,
-                 sr, sg, sb, alpha, 0f, 0f, -1f);
-            quad(shimmerVc, m, poseEntry,
-                 cx + strandX - w2 * squeeze, cy + strandY + lift - h2 * squeeze, czB,  0f, 1f,
-                 cx + strandX + w2 * squeeze, cy + strandY + lift - h2 * squeeze, czB,  1f, 1f,
-                 cx + strandX + w2 * squeeze, cy + strandY + lift + h2 * squeeze, czB,  1f, 0f,
-                 cx + strandX - w2 * squeeze, cy + strandY + lift + h2 * squeeze, czB,  0f, 0f,
-                 sr, sg, sb, alpha, 0f, 0f, 1f);
-        }
+    private static float getTierHeight(int tier) {
+        return switch (tier) {
+            case 0 -> FEATHER_HEIGHT;
+            case 2 -> RINZU_HEIGHT;
+            default -> CRINKLE_HEIGHT;
+        };
     }
 
-    private static void drawRibbonFaces(VertexConsumer vc, Matrix4f m, PoseStack.Pose poseEntry,
-                                        float cx, float cy, float cz,
-                                        float w2, float h2, float d2,
-                                        int r, int g, int b, int a) {
-        quad(vc, m, poseEntry,
-             cx - w2, cy + h2, cz + d2,   0f, 0f,
-             cx + w2, cy + h2, cz + d2,   1f, 0f,
-             cx + w2, cy - h2, cz + d2,   1f, 1f,
-             cx - w2, cy - h2, cz + d2,   0f, 1f,
-             r, g, b, a, 0f, 0f, -1f);
-        quad(vc, m, poseEntry,
-             cx - w2, cy - h2, cz - d2,   0f, 1f,
-             cx + w2, cy - h2, cz - d2,   1f, 1f,
-             cx + w2, cy + h2, cz - d2,   1f, 0f,
-             cx - w2, cy + h2, cz - d2,   0f, 0f,
-             r, g, b, a, 0f, 0f, 1f);
+    private static float getTierRopeThickness(int tier) {
+        return switch (tier) {
+            case 0 -> FEATHER_ROPE;
+            case 2 -> RINZU_ROPE;
+            default -> CRINKLE_ROPE;
+        };
     }
 
-    private static void drawEdgeBox(VertexConsumer edgeVc, Matrix4f m, PoseStack.Pose poseEntry,
-                                    float cx, float cy, float cz, float w2, float h2, float d2,
-                                    int r, int g, int b, int a) {
-        // Sides: left, right, top, bottom.
-        quad(edgeVc, m, poseEntry,
-             cx - w2, cy + h2, cz - d2,  0f, 0f,
-             cx - w2, cy + h2, cz + d2,  1f, 0f,
-             cx - w2, cy - h2, cz + d2,  1f, 1f,
-             cx - w2, cy - h2, cz - d2,  0f, 1f,
-             r, g, b, a, -1f, 0f, 0f);
-        quad(edgeVc, m, poseEntry,
-             cx + w2, cy + h2, cz + d2,  0f, 0f,
-             cx + w2, cy + h2, cz - d2,  1f, 0f,
-             cx + w2, cy - h2, cz - d2,  1f, 1f,
-             cx + w2, cy - h2, cz + d2,  0f, 1f,
-             r, g, b, a, 1f, 0f, 0f);
-        quad(edgeVc, m, poseEntry,
-             cx - w2, cy + h2, cz + d2,  0f, 0f,
-             cx + w2, cy + h2, cz + d2,  1f, 0f,
-             cx + w2, cy + h2, cz - d2,  1f, 1f,
-             cx - w2, cy + h2, cz - d2,  0f, 1f,
-             r, g, b, a, 0f, 1f, 0f);
-        quad(edgeVc, m, poseEntry,
-             cx - w2, cy - h2, cz - d2,  0f, 1f,
-             cx + w2, cy - h2, cz - d2,  1f, 1f,
-             cx + w2, cy - h2, cz + d2,  1f, 0f,
-             cx - w2, cy - h2, cz + d2,  0f, 0f,
-             r, g, b, a, 0f, -1f, 0f);
-    }
-
-    private static float lerp(float start, float end, float t) {
-        return start + (end - start) * t;
+    private static int getTierSegments(int tier) {
+        return switch (tier) {
+            case 0 -> FEATHER_SEGMENTS;
+            case 2 -> RINZU_SEGMENTS;
+            default -> CRINKLE_SEGMENTS;
+        };
     }
 
     private static void quad(VertexConsumer vc, Matrix4f m, PoseStack.Pose pose,
@@ -376,7 +195,6 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
             float x3, float y3, float z3, float u3, float v3,
             int r, int g, int b, int a,
             float nx, float ny, float nz) {
-        // 0xF000F0 = LightTexture.FULL_BRIGHT packed value
         vc.addVertex(m, x0, y0, z0).setColor(r, g, b, a).setUv(u0, v0)
           .setOverlay(OverlayTexture.NO_OVERLAY).setLight(0xF000F0).setNormal(pose, nx, ny, nz);
         vc.addVertex(m, x1, y1, z1).setColor(r, g, b, a).setUv(u1, v1)

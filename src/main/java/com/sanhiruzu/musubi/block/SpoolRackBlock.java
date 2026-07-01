@@ -42,8 +42,8 @@ import javax.annotation.Nullable;
  *
  * Right-click with a skein   → deposit skein contents; skein stays in hand with
  *                              remainder if the rack fills for some variants.
- * Right-click with empty hand → extract one stack (64) from the first non-empty slot.
- * Shift + right-click         → extract all items from all slots.
+ * Right-click with empty hand → take the full skein from the first non-empty peg.
+ * Shift + right-click         → take all skeins from all pegs.
  */
 public class SpoolRackBlock extends BaseEntityBlock {
 

@@ -228,7 +228,7 @@ public class MarudaiBlockEntity extends BlockEntity {
 
         for (BlockPos rackPos : targetRacks) {
             if (level.getBlockEntity(rackPos) instanceof SpoolRackBlockEntity rack) {
-                if (rack.tryDeposit(head.itemId(), 1) > 0) {
+                if (rack.tryDeposit(mountedSkein, head.itemId(), 1) > 0) {
                     deposited = true;
                     break;
                 }
