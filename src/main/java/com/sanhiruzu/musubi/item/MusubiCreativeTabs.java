@@ -47,6 +47,7 @@ public class MusubiCreativeTabs {
                 output.accept(MusubiBlocks.MARUDAI.get());
                 output.accept(MusubiBlocks.SPINNING_WHEEL.get());
                 output.accept(MusubiBlocks.SHRINE_STONE.get());
+                output.accept(MusubiBlocks.TORII.get());
                 output.accept(MusubiBlocks.ITOMAKI.get());
                 output.accept(MusubiBlocks.DONATION_BOX.get());
                 output.accept(MusubiBlocks.LOOM.get());

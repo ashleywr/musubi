@@ -2,7 +2,6 @@
 	"format_version": "1.21.11",
 	"credit": "Made with Blockbench",
 	"textures": {
-		"particle": "musubi:block/spool_rack",
 		"wood": "musubi:block/spool_rack"
 	},
 	"elements": [
@@ -59,24 +58,11 @@
 			}
 		},
 		{
-			"name": "peg_rail",
-			"from": [2, 10, 14],
-			"to": [14, 14, 16],
-			"faces": {
-				"north": {"uv": [2, 2, 14, 6], "texture": "#wood"},
-				"east": {"uv": [0, 2, 2, 6], "texture": "#wood"},
-				"south": {"uv": [2, 2, 14, 6], "texture": "#wood", "cullface": "south"},
-				"west": {"uv": [0, 2, 2, 6], "texture": "#wood"},
-				"up": {"uv": [2, 14, 14, 16], "texture": "#wood"},
-				"down": {"uv": [2, 14, 14, 16], "texture": "#wood"}
-			}
-		},
-		{
 			"name": "top_rail",
-			"from": [0, 13, 8],
+			"from": [0, 14, 9],
 			"to": [16, 16, 14],
 			"faces": {
-				"north": {"uv": [0, 0, 16, 3], "texture": "#wood"},
+				"north": {"uv": [0, 2, 16, 5], "texture": "#wood"},
 				"east": {"uv": [0, 0, 6, 3], "texture": "#wood"},
 				"south": {"uv": [0, 0, 16, 3], "texture": "#wood"},
 				"west": {"uv": [0, 0, 6, 3], "texture": "#wood"},
@@ -85,65 +71,66 @@
 			}
 		},
 		{
-			"name": "peg_1",
-			"from": [1, 11, 4],
-			"to": [3, 13, 14],
-			"rotation": {"angle": 22.5, "axis": "x", "origin": [2, 12, 14]},
-			"faces": {
-				"north": {"uv": [0, 0, 2, 2], "texture": "#wood"},
-				"east": {"uv": [0, 0, 10, 2], "texture": "#wood"},
-				"south": {"uv": [0, 0, 2, 2], "texture": "#wood"},
-				"west": {"uv": [0, 0, 10, 2], "texture": "#wood"},
-				"up": {"uv": [0, 0, 2, 10], "texture": "#wood"},
-				"down": {"uv": [0, 0, 2, 10], "texture": "#wood"}
-			}
-		},
-		{
-			"name": "peg_2",
-			"from": [5, 11, 4],
-			"to": [7, 13, 14],
-			"rotation": {"angle": 22.5, "axis": "x", "origin": [6, 12, 14]},
-			"faces": {
-				"north": {"uv": [0, 0, 2, 2], "texture": "#wood"},
-				"east": {"uv": [0, 0, 10, 2], "texture": "#wood"},
-				"south": {"uv": [0, 0, 2, 2], "texture": "#wood"},
-				"west": {"uv": [0, 0, 10, 2], "texture": "#wood"},
-				"up": {"uv": [0, 0, 2, 10], "texture": "#wood"},
-				"down": {"uv": [0, 0, 2, 10], "texture": "#wood"}
-			}
-		},
-		{
 			"name": "peg_3",
-			"from": [9, 11, 4],
-			"to": [11, 13, 14],
-			"rotation": {"angle": 22.5, "axis": "x", "origin": [10, 12, 14]},
+			"from": [4, 10, 10],
+			"to": [5, 11, 15],
+			"rotation": {"angle": 22.5, "axis": "x", "origin": [4, 9, 15]},
 			"faces": {
-				"north": {"uv": [0, 0, 2, 2], "texture": "#wood"},
-				"east": {"uv": [0, 0, 10, 2], "texture": "#wood"},
+				"north": {"uv": [9, 8, 11, 10], "texture": "#wood"},
+				"east": {"uv": [0, 0, 6, 2], "texture": "#wood"},
 				"south": {"uv": [0, 0, 2, 2], "texture": "#wood"},
-				"west": {"uv": [0, 0, 10, 2], "texture": "#wood"},
-				"up": {"uv": [0, 0, 2, 10], "texture": "#wood"},
-				"down": {"uv": [0, 0, 2, 10], "texture": "#wood"}
+				"west": {"uv": [5, 9, 11, 11], "texture": "#wood"},
+				"up": {"uv": [0, 0, 2, 6], "texture": "#wood"},
+				"down": {"uv": [0, 0, 2, 6], "texture": "#wood"}
 			}
 		},
 		{
 			"name": "peg_4",
-			"from": [13, 11, 4],
-			"to": [15, 13, 14],
-			"rotation": {"angle": 22.5, "axis": "x", "origin": [14, 12, 14]},
+			"from": [4, 5, 10],
+			"to": [5, 6, 15],
+			"rotation": {"angle": 22.5, "axis": "x", "origin": [4, 4, 15]},
 			"faces": {
-				"north": {"uv": [0, 0, 2, 2], "texture": "#wood"},
-				"east": {"uv": [0, 0, 10, 2], "texture": "#wood"},
+				"north": {"uv": [5, 8, 7, 10], "texture": "#wood"},
+				"east": {"uv": [0, 0, 6, 2], "texture": "#wood"},
 				"south": {"uv": [0, 0, 2, 2], "texture": "#wood"},
-				"west": {"uv": [0, 0, 10, 2], "texture": "#wood"},
-				"up": {"uv": [0, 0, 2, 10], "texture": "#wood"},
-				"down": {"uv": [0, 0, 2, 10], "texture": "#wood"}
+				"west": {"uv": [5, 9, 11, 11], "texture": "#wood"},
+				"up": {"uv": [0, 0, 2, 6], "texture": "#wood"},
+				"down": {"uv": [0, 0, 2, 6], "texture": "#wood"}
+			}
+		},
+		{
+			"name": "peg_1",
+			"from": [11, 10, 10],
+			"to": [12, 11, 15],
+			"rotation": {"angle": 22.5, "axis": "x", "origin": [11, 9, 15]},
+			"faces": {
+				"north": {"uv": [9, 8, 11, 10], "texture": "#wood"},
+				"east": {"uv": [0, 0, 6, 2], "texture": "#wood"},
+				"south": {"uv": [0, 0, 2, 2], "texture": "#wood"},
+				"west": {"uv": [5, 9, 11, 11], "texture": "#wood"},
+				"up": {"uv": [0, 0, 2, 6], "texture": "#wood"},
+				"down": {"uv": [0, 0, 2, 6], "texture": "#wood"}
+			}
+		},
+		{
+			"name": "peg_3",
+			"from": [11, 5, 10],
+			"to": [12, 6, 15],
+			"rotation": {"angle": 22.5, "axis": "x", "origin": [11, 4, 15]},
+			"faces": {
+				"north": {"uv": [9, 8, 11, 10], "texture": "#wood"},
+				"east": {"uv": [0, 0, 6, 2], "texture": "#wood"},
+				"south": {"uv": [0, 0, 2, 2], "texture": "#wood"},
+				"west": {"uv": [5, 9, 11, 11], "texture": "#wood"},
+				"up": {"uv": [0, 0, 2, 6], "texture": "#wood"},
+				"down": {"uv": [0, 0, 2, 6], "texture": "#wood"}
 			}
 		},
 		{
 			"name": "top_join_beam",
-			"from": [1, 12, 13],
-			"to": [15, 14, 16],
+			"from": [1, 13, 13],
+			"to": [15, 14, 14],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 1, 0]},
 			"faces": {
 				"north": {"uv": [2, 0, 14, 2], "texture": "#wood"},
 				"east": {"uv": [0, 0, 3, 2], "texture": "#wood"},
@@ -184,7 +171,7 @@
 			"from": [2, 2, 15],
 			"to": [14, 14, 16],
 			"faces": {
-				"north": {"uv": [0, 0, 12, 12], "texture": "#wood"},
+				"north": {"uv": [2, 1, 14, 13], "texture": "#wood"},
 				"east": {"uv": [0, 0, 1, 12], "texture": "#wood"},
 				"south": {"uv": [0, 0, 12, 12], "texture": "#wood"},
 				"west": {"uv": [0, 0, 1, 12], "texture": "#wood"},
@@ -192,5 +179,6 @@
 				"down": {"uv": [0, 0, 12, 1], "texture": "#wood"}
 			}
 		}
-	]
+	],
+	"display": {}
 }

@@ -350,6 +350,20 @@ public class TamaItem extends Item {
         lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tama.tooltip.tier"),
             ChatFormatting.GRAY, Component.translatable("musubi.tama.tier." + tier), accent));
 
+        if (tier == 0) {
+            MusubiTooltip.addLine(lines, ChatFormatting.WHITE, "musubi.item.bone_tama.summary");
+            if (showControls) {
+                lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tooltip.source"),
+                    ChatFormatting.GOLD, Component.translatable("musubi.item.bone_tama.source"),
+                    ChatFormatting.GRAY));
+                lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tooltip.use"),
+                    ChatFormatting.GOLD, Component.translatable("musubi.item.bone_tama.use"),
+                    ChatFormatting.GRAY));
+            } else {
+                MusubiTooltip.addShiftPrompt(lines);
+            }
+        }
+
         if (storage.isEmpty()) {
             MusubiTooltip.addLine(lines, ChatFormatting.DARK_GRAY, "musubi.tama.empty");
         } else {

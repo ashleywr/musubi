@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BB",
+    "BB"
+  ],
+  "key": {
+    "B": { "item": "minecraft:bamboo_planks" }
+  },
+  "result": {
+    "id": "musubi:tatami",
+    "count": 3
+  }
+}

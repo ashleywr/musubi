@@ -5,6 +5,9 @@
   "item.musubi.iron_tama": "Iron Tama",
   "item.musubi.silver_tama": "Silver Tama",
   "item.musubi.orihime_tama": "Orihime Tama",
+  "musubi.item.bone_tama.summary": "Born where moonlight settles on still water",
+  "musubi.item.bone_tama.source": "A feather offered to a moonlit water source",
+  "musubi.item.bone_tama.use": "Right-click still water beneath the moon",
   "item.musubi.skein": "Silk Skein",
   "item.musubi.fiber_bundle": "Fiber Bundle",
   "item.musubi.silk_thread": "Silk Thread",
@@ -21,6 +24,7 @@
   "block.musubi.spool_rack": "Spool Rack",
   "block.musubi.silkworm": "Silkworm",
   "block.musubi.shrine_stone": "Shrine Stone",
+  "block.musubi.torii": "Torii",
   "block.musubi.itomaki": "Itomaki",
   "block.musubi.donation_box": "Offering Box",
 
@@ -29,6 +33,7 @@
 
   "block.musubi.shinboku": "Shinboku",
   "block.musubi.loom": "Weaving Loom",
+  "block.musubi.tatami": "Tatami Flooring",
 
   "item.musubi.woven_cloth": "Woven Cloth",
   "item.musubi.magical_cloth": "Enchanted Cloth",
@@ -170,6 +175,7 @@
   "musubi.weaving_pattern.result": "Repeats the stored recipe",
   "musubi.weaving_pattern.target": "Target",
   "musubi.weaving_pattern.mode": "Mode",
+  "musubi.moon_ritual.complete": "The moon answers.",
 
   "musubi.block.spool_rack.summary": "Wall-mounted storage for skeins",
   "musubi.block.spool_rack.use": "Place a skein to store thread bundles",
@@ -201,6 +207,8 @@
   "musubi.block.loom.use": "Install a Weaving Pattern",
   "musubi.block.loom.result": "Repeats the stored target",
   "musubi.block.loom.effect": "Pulls ingredients from adjacent containers",
+
+  "structure.musubi.mountain_shrine": "Mountain Shrine",
 
   "musubi.marudai.no_racks": "No spool racks within reach",
   "musubi.marudai.already_winding": "Already winding - wait for it to finish",

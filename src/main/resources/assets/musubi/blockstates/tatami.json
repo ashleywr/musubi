@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "axis=x": { "model": "musubi:block/tatami", "y": 90 },
+    "axis=y": { "model": "musubi:block/tatami" },
+    "axis=z": { "model": "musubi:block/tatami" }
+  }
+}

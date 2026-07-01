@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "musubi:block/torii" },
+    "facing=east": { "model": "musubi:block/torii", "y": 90 },
+    "facing=south": { "model": "musubi:block/torii", "y": 180 },
+    "facing=west": { "model": "musubi:block/torii", "y": 270 }
+  }
+}

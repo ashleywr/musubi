@@ -17,6 +17,9 @@ public final class MusubiNetwork {
         PayloadRegistrar registrar = event.registrar("1");
         registrar.playToServer(AttuneKeyPayload.TYPE, AttuneKeyPayload.STREAM_CODEC, MusubiNetwork::handleAttune);
         registrar.playToClient(TamaBindVfxPayload.TYPE, TamaBindVfxPayload.STREAM_CODEC, MusubiNetwork::handleTamaBindVfx);
+        registrar.playToClient(com.sanhiruzu.musubi.network.ItomakiUnspoolVfxPayload.TYPE,
+            com.sanhiruzu.musubi.network.ItomakiUnspoolVfxPayload.STREAM_CODEC, MusubiNetwork::handleItomakiUnspool);
+        registrar.playToClient(MoonRiteVfxPayload.TYPE, MoonRiteVfxPayload.STREAM_CODEC, MusubiNetwork::handleMoonRiteVfx);
     }
 
     private static void handleAttune(AttuneKeyPayload payload, IPayloadContext context) {
@@ -31,6 +34,22 @@ public final class MusubiNetwork {
         context.enqueueWork(() -> {
             if (context.player() instanceof LocalPlayer player) {
                 MusubiClient.playTamaBindVfx(player.level(), payload);
+            }
+        });
+    }
+
+    private static void handleItomakiUnspool(com.sanhiruzu.musubi.network.ItomakiUnspoolVfxPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof LocalPlayer player) {
+                MusubiClient.playItomakiUnspool(player.level(), payload);
+            }
+        });
+    }
+
+    private static void handleMoonRiteVfx(MoonRiteVfxPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof LocalPlayer player) {
+                MusubiClient.playMoonRiteVfx(player.level(), payload);
             }
         });
     }

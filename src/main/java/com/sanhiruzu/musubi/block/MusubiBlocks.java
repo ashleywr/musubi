@@ -52,6 +52,14 @@ public class MusubiBlocks {
                 .lightLevel(state -> 4)
         ));
 
+    public static final DeferredHolder<Block, ToriiBlock> TORII =
+        register("torii", () -> new ToriiBlock(
+            BlockBehaviour.Properties.of()
+                .strength(2.0f, 6.0f)
+                .sound(SoundType.WOOD)
+                .noOcclusion()
+        ));
+
     public static final DeferredHolder<Block, ItomakiBlock> ITOMAKI =
         register("itomaki", () -> new ItomakiBlock(
             BlockBehaviour.Properties.of()
@@ -93,6 +101,13 @@ public class MusubiBlocks {
                 .noOcclusion()
                 .noCollission()
                 .randomTicks()
+        ));
+
+    public static final DeferredHolder<Block, TatamiBlock> TATAMI =
+        register("tatami", () -> new TatamiBlock(
+            BlockBehaviour.Properties.of()
+                .strength(0.6f, 0.6f)
+                .sound(SoundType.GRASS)
         ));
 
     private static <T extends Block> DeferredHolder<Block, T> register(String name, Supplier<T> block) {

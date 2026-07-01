@@ -122,6 +122,7 @@ public final class MusubiCurios {
         double maxRange = 0.0;
         for (Player player : level.getEntitiesOfClass(Player.class, item.getBoundingBox().inflate(10.0))) {
             ItemStack tama = findWornTama(player);
+            if (tama == null) continue;
             if (!(tama.getItem() instanceof TamaItem t)) continue;
             if (!TamaItem.accepts(tama, id)) continue;
 

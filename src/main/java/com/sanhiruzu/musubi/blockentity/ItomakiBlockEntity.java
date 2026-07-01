@@ -35,6 +35,8 @@ public class ItomakiBlockEntity extends BlockEntity {
     public static final int TICKS_PER_BATCH = 2;
     public static final int ITEMS_PER_BATCH = 64;
     public static final int SEARCH_RANGE    = 5;
+    // Matches the hidden `spool` anchor cube in itomaki.json / itomaki_spooling.json.
+    private static final double UNSPOOL_SOURCE_Y = 15.0 / 16.0;
 
     private ItemStack tama = ItemStack.EMPTY;
     private int batchTimer = TICKS_PER_BATCH;
@@ -103,6 +105,7 @@ public class ItomakiBlockEntity extends BlockEntity {
         // Prefer racks that already hold this item type (more cache-friendly).
         int bestFit = 0;
         SpoolRackBlockEntity bestRack = null;
+        BlockPos bestRackPos = null;
 
         for (BlockPos p : BlockPos.betweenClosed(
                 origin.offset(-SEARCH_RANGE, -SEARCH_RANGE, -SEARCH_RANGE),
@@ -114,10 +117,22 @@ public class ItomakiBlockEntity extends BlockEntity {
             if (score > bestFit) {
                 bestFit = score;
                 bestRack = rack;
+                bestRackPos = p;
             }
         }
 
-        return bestRack != null ? bestRack.tryDeposit(itemId, amount) : 0;
+        if (bestRack == null) return 0;
+        int deposited = bestRack.tryDeposit(itemId, amount);
+
+        // Send VFX from the itomaki to the rack's peg position.
+        if (deposited > 0 && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            net.minecraft.world.phys.Vec3[] targets = { bestRackPos.getCenter() };
+            net.minecraft.world.phys.Vec3 source = new net.minecraft.world.phys.Vec3(
+                getBlockPos().getX() + 0.5, getBlockPos().getY() + UNSPOOL_SOURCE_Y, getBlockPos().getZ() + 0.5);
+            var payload = com.sanhiruzu.musubi.network.ItomakiUnspoolVfxPayload.create(source, targets, itemId, serverLevel.getGameTime());
+            net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(payload);
+        }
+        return deposited;
     }
 
     // ── Tama management ──────────────────────────────────────────────────────

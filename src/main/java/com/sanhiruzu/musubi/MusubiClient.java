@@ -6,7 +6,11 @@ import com.sanhiruzu.musubi.component.SkeinContents;
 import com.sanhiruzu.musubi.curio.MusubiCurios;
 import com.sanhiruzu.musubi.item.MusubiItems;
 import com.sanhiruzu.musubi.client.render.TamaCollectionVfx;
+import com.sanhiruzu.musubi.client.render.ItomakiUnspoolVfx;
+import com.sanhiruzu.musubi.client.render.MoonReflectionVfx;
 import com.sanhiruzu.musubi.network.TamaBindVfxPayload;
+import com.sanhiruzu.musubi.network.ItomakiUnspoolVfxPayload;
+import com.sanhiruzu.musubi.network.MoonRiteVfxPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -23,6 +27,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import com.sanhiruzu.musubi.blockentity.MusubiBlockEntities;
+import com.sanhiruzu.musubi.client.render.ItomakiBER;
 import com.sanhiruzu.musubi.client.render.MarudaiBER;
 import com.sanhiruzu.musubi.client.render.TamaCurioRenderer;
 import com.sanhiruzu.musubi.client.render.ShinbokuBER;
@@ -56,6 +61,8 @@ public class MusubiClient {
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(MusubiClient::onRenderGui);
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(MusubiClient::onItemTooltip);
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(TamaCollectionVfx::onRenderLevelStage);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(ItomakiUnspoolVfx::onRenderLevelStage);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(MoonReflectionVfx::onRenderLevelStage);
 
         event.enqueueWork(() -> {
             registerTamaStrandProperty();
@@ -75,14 +82,21 @@ public class MusubiClient {
         }
     }
 
-    /** Drives the {@code musubi:strands} model property = number of distinct stored types (0–4),
-     *  which selects how many strand sub-models the Tama shows. */
+    /** Drives the {@code musubi:strands} model property = how full the Tama is, in 0–4 steps
+     *  (0 = empty/bare bobbin, 4 = capacity), selecting how much silk the staged models wrap on.
+     *  Linear: each strand layer covers a quarter of capacity, so it reads like a fuel gauge. */
     private static void registerTamaStrandProperty() {
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(Musubi.MOD_ID, "strands");
         net.minecraft.client.renderer.item.ClampedItemPropertyFunction fn =
-            (stack, level, entity, seed) -> Math.min(4,
-                stack.getOrDefault(MusubiDataComponents.TAMA_STORAGE,
-                    com.sanhiruzu.musubi.component.TamaStorage.EMPTY).distinctTypes());
+            (stack, level, entity, seed) -> {
+                if (!(stack.getItem() instanceof TamaItem tama)) return 0f;
+                int total = stack.getOrDefault(MusubiDataComponents.TAMA_STORAGE,
+                    com.sanhiruzu.musubi.component.TamaStorage.EMPTY).total();
+                if (total <= 0) return 0f;
+                float fill = Math.min(1f, total / (float) Math.max(1, tama.storageCapacity(stack)));
+                int stage = (int) Math.ceil(fill * 4f);
+                return Math.min(4, Math.max(1, stage));
+            };
         for (var holder : java.util.List.of(
                 MusubiItems.BONE_TAMA, MusubiItems.IRON_TAMA,
                 MusubiItems.SILVER_TAMA, MusubiItems.ORIHIME_TAMA)) {
@@ -105,6 +119,20 @@ public class MusubiClient {
     public static void playTamaBindVfx(net.minecraft.world.level.Level level, TamaBindVfxPayload payload) {
         if (!(level instanceof ClientLevel clientLevel)) return;
         TamaCollectionVfx.accept(clientLevel, payload);
+    }
+
+    /**
+     * Client-side unspool VFX: render threads flowing from an Itomaki to nearby Spool Racks.
+     */
+    public static void playItomakiUnspool(net.minecraft.world.level.Level level, ItomakiUnspoolVfxPayload payload) {
+        if (!(level instanceof ClientLevel)) return;
+        ItomakiUnspoolVfx.accept(payload);
+    }
+
+    /** Client-side moon rite effect: render the response over the ritual water source. */
+    public static void playMoonRiteVfx(net.minecraft.world.level.Level level, MoonRiteVfxPayload payload) {
+        if (!(level instanceof ClientLevel clientLevel)) return;
+        MoonReflectionVfx.accept(clientLevel, payload);
     }
 
     /**
@@ -188,6 +216,7 @@ public class MusubiClient {
         event.registerBlockEntityRenderer(MusubiBlockEntities.SPINNING_WHEEL.get(), SpinningWheelBER::new);
         event.registerBlockEntityRenderer(MusubiBlockEntities.SHINBOKU.get(), ShinbokuBER::new);
         event.registerBlockEntityRenderer(MusubiBlockEntities.MARUDAI.get(), MarudaiBER::new);
+        event.registerBlockEntityRenderer(MusubiBlockEntities.ITOMAKI.get(), ItomakiBER::new);
     }
 
     /** The spinning wheel's rotating disc is its own model, not tied to any blockstate,
