@@ -1,7 +1,7 @@
 {
   "config_version": 1,
   "package": "com.sanhiruzu.musubi.mixin",
-  "mixins": ["InventoryAddMixin"],
-  "client": [],
+  "mixins": ["InventoryAddMixin", "ItemEntityMergeMixin"],
+  "client": ["ItemRendererMixin", "ItemEntityRendererMixin"],
   "server": []
 }

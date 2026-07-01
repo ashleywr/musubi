@@ -1,6 +1,8 @@
 package com.sanhiruzu.musubi.network;
 
+import com.sanhiruzu.musubi.MusubiClient;
 import com.sanhiruzu.musubi.item.TamaItem;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -14,12 +16,21 @@ public final class MusubiNetwork {
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
         registrar.playToServer(AttuneKeyPayload.TYPE, AttuneKeyPayload.STREAM_CODEC, MusubiNetwork::handleAttune);
+        registrar.playToClient(TamaBindVfxPayload.TYPE, TamaBindVfxPayload.STREAM_CODEC, MusubiNetwork::handleTamaBindVfx);
     }
 
     private static void handleAttune(AttuneKeyPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer player) {
                 TamaItem.attuneFromKey(player);
+            }
+        });
+    }
+
+    private static void handleTamaBindVfx(TamaBindVfxPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof LocalPlayer player) {
+                MusubiClient.playTamaBindVfx(player.level(), payload);
             }
         });
     }

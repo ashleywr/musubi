@@ -4,6 +4,7 @@ import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
 import com.sanhiruzu.musubi.item.SkeinItem;
 import com.sanhiruzu.musubi.item.TamaItem;
+import com.sanhiruzu.musubi.util.PickupVfxControl;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -65,7 +66,9 @@ public class InventoryAddMixin {
             int deposited = TamaItem.depositInto(worn, id, stack.getCount());
             if (deposited > 0) {
                 stack.shrink(deposited);
-                TamaItem.playBindEffect(player, id);
+                if (!PickupVfxControl.isBindPickupVfxSuppressed()) {
+                    TamaItem.playBindEffect(player, id);
+                }
                 if (stack.isEmpty()) {
                     cir.setReturnValue(true);
                     return;
@@ -79,7 +82,9 @@ public class InventoryAddMixin {
             int deposited = TamaItem.depositInto(inv, id, stack.getCount());
             if (deposited > 0) {
                 stack.shrink(deposited);
-                TamaItem.playBindEffect(player, id);
+                if (!PickupVfxControl.isBindPickupVfxSuppressed()) {
+                    TamaItem.playBindEffect(player, id);
+                }
                 if (stack.isEmpty()) {
                     cir.setReturnValue(true);
                     return;

@@ -37,7 +37,7 @@ public final class TamaHudOverlay {
 
         TamaStorage storage = tama.getOrDefault(MusubiDataComponents.TAMA_STORAGE, TamaStorage.EMPTY);
         int total = storage.total();
-        int cap = t.storageCapacity();
+        int cap = t.storageCapacity(tama);
         float frac = cap <= 0 ? 0f : Mth.clamp(total / (float) cap, 0f, 1f);
 
         int barW = 90, barH = 5;

@@ -2,9 +2,12 @@ package com.sanhiruzu.musubi.item;
 
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
+import com.sanhiruzu.musubi.component.TamaAugments;
 import com.sanhiruzu.musubi.component.TamaFilter;
 import com.sanhiruzu.musubi.component.TamaStorage;
+import com.sanhiruzu.musubi.curio.MusubiCurios;
 import com.sanhiruzu.musubi.sound.MusubiSounds;
+import com.sanhiruzu.musubi.network.TamaBindVfxPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -15,22 +18,27 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
+import net.neoforged.neoforge.network.PacketDistributor;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
  * The tama — a weighted kumihimo bobbin that acts as a one-slot magic bag.
  *
- * <p>It carries two components:
+ * <p>It carries three components:
  * <ul>
  *   <li>{@link TamaFilter} — the learned set of item types it binds on pickup.</li>
  *   <li>{@link TamaStorage} — the bound essence (a flat itemId→count ledger).</li>
+ *   <li>{@link TamaAugments} — Marudai-woven augment threads installed into the Tama.</li>
  * </ul>
  *
  * <p>Interactions (held in main hand):
@@ -41,7 +49,8 @@ import java.util.List;
  *       in the inventory into the tama.</li>
  *   <li>Filtered items <b>bind automatically the moment they are picked up</b> (handled by
  *       {@code InventoryAddMixin}) — they never take an inventory slot.</li>
- *   <li>Right-click a <b>Spool Rack</b> to dump the bound essence onto the wall (handled by
+ *   <li>Right-click an <b>Itomaki</b> to return matching items from your hand into storage, or a
+ *       <b>Spool Rack</b> to dump the bound essence onto the wall (handled by
  *       {@code SpoolRackBlock}).</li>
  * </ul>
  *
@@ -60,32 +69,82 @@ public class TamaItem extends Item {
 
     /** Maximum number of distinct item types this tama's filter may hold. */
     public int filterCapacity() {
-        return switch (tier) {
+        return filterCapacity(ItemStack.EMPTY);
+    }
+
+    /** Radius (blocks) within which a worn tama pulls matching dropped items toward the wearer. */
+    public double pickupRange() {
+        return pickupRange(ItemStack.EMPTY);
+    }
+
+    /** Maximum total number of items this tama may store. */
+    public int storageCapacity() {
+        return storageCapacity(ItemStack.EMPTY);
+    }
+
+    /** Maximum number of distinct item types this tama's filter may hold. */
+    public int filterCapacity(ItemStack tamaStack) {
+        int base = switch (tier) {
             case 0 -> 4;     // bone
             case 1 -> 8;     // iron
             case 2 -> 16;    // silver
             default -> 64;   // orihime (effectively unlimited)
         };
+        return base + (hasAugment(tamaStack, TamaAugmentItem.Kind.SPIRIT_THREAD) ? 4 : 0);
     }
 
     /** Radius (blocks) within which a worn tama pulls matching dropped items toward the wearer. */
-    public double pickupRange() {
-        return switch (tier) {
+    public double pickupRange(ItemStack tamaStack) {
+        double base = switch (tier) {
             case 0 -> 3.0;   // bone
             case 1 -> 4.0;   // iron
             case 2 -> 5.0;   // silver
             default -> 7.0;  // orihime
         };
+        if (hasAugment(tamaStack, TamaAugmentItem.Kind.REACHING_THREAD)) base += 2.0;
+        if (hasAugment(tamaStack, TamaAugmentItem.Kind.SPIRIT_THREAD)) base += 1.0;
+        return base;
     }
 
     /** Maximum total number of items this tama may store. */
-    public int storageCapacity() {
-        return switch (tier) {
+    public int storageCapacity(ItemStack tamaStack) {
+        int base = switch (tier) {
             case 0 -> 4_096;        // bone
             case 1 -> 16_384;       // iron
             case 2 -> 65_536;       // silver
             default -> 2_000_000;   // orihime (effectively unlimited)
         };
+        int bonus = 0;
+        if (hasAugment(tamaStack, TamaAugmentItem.Kind.EMBER_THREAD)) {
+            bonus += Math.max(1, base / 4);
+        }
+        if (hasAugment(tamaStack, TamaAugmentItem.Kind.HOLLOW_THREAD)) {
+            bonus += Math.max(1, base / 2);
+        }
+        return base + bonus;
+    }
+
+    // ── Augment API ────────────────────────────────────────────────────────────
+
+    public static boolean hasAugment(ItemStack tamaStack, TamaAugmentItem.Kind kind) {
+        return hasAugment(tamaStack, kind.id());
+    }
+
+    public static boolean hasAugment(ItemStack tamaStack, ResourceLocation id) {
+        if (id == null || !(tamaStack.getItem() instanceof TamaItem)) return false;
+        return tamaStack.getOrDefault(MusubiDataComponents.TAMA_AUGMENTS, TamaAugments.EMPTY).contains(id);
+    }
+
+    public static boolean addAugment(ItemStack tamaStack, TamaAugmentItem.Kind kind) {
+        return addAugment(tamaStack, kind.id());
+    }
+
+    public static boolean addAugment(ItemStack tamaStack, ResourceLocation id) {
+        if (id == null || !(tamaStack.getItem() instanceof TamaItem)) return false;
+        TamaAugments augments = tamaStack.getOrDefault(MusubiDataComponents.TAMA_AUGMENTS, TamaAugments.EMPTY);
+        if (augments.contains(id)) return false;
+        tamaStack.set(MusubiDataComponents.TAMA_AUGMENTS, augments.with(id));
+        return true;
     }
 
     // ── Static binding API (used by the mixin, rack, and sweep) ─────────────────
@@ -103,12 +162,52 @@ public class TamaItem extends Item {
     public static int depositInto(ItemStack tamaStack, ResourceLocation id, int amount) {
         if (id == null || !(tamaStack.getItem() instanceof TamaItem tama)) return 0;
         TamaStorage storage = tamaStack.getOrDefault(MusubiDataComponents.TAMA_STORAGE, TamaStorage.EMPTY);
-        int space = tama.storageCapacity() - storage.total();
+        int space = tama.storageCapacity(tamaStack) - storage.total();
         if (space <= 0) return 0;
         int deposited = Math.min(space, amount);
         if (deposited <= 0) return 0;
         tamaStack.set(MusubiDataComponents.TAMA_STORAGE, storage.withAdded(id, deposited));
         return deposited;
+    }
+
+    /**
+     * Binds as many items as possible from {@code stack} into {@code tamaStack}.
+     * Returns the number actually moved and shrinks {@code stack} by that amount.
+     */
+    public static int depositFromStack(ItemStack tamaStack, ItemStack stack) {
+        if (stack.isEmpty() || !(tamaStack.getItem() instanceof TamaItem)) return 0;
+        if (stack.getItem() instanceof TamaItem) return 0;
+
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (!accepts(tamaStack, id)) return 0;
+
+        int deposited = depositInto(tamaStack, id, stack.getCount());
+        if (deposited > 0) stack.shrink(deposited);
+        return deposited;
+    }
+
+    /**
+     * Treats the Tama's stored contents as a skein-shaped source for Marudai recipes.
+     *
+     * The Tama itself is not consumed; the Marudai reads its stored silk ledger as the
+     * winding source so the machine can braid augments directly from the Tama and racks.
+     */
+    @Nullable
+    public static SkeinContents asSkeinContents(ItemStack tamaStack) {
+        if (!(tamaStack.getItem() instanceof TamaItem tama)) return null;
+
+        TamaStorage storage = tamaStack.getOrDefault(MusubiDataComponents.TAMA_STORAGE, TamaStorage.EMPTY);
+        if (storage.isEmpty()) return null;
+
+        return new SkeinContents(
+            tama.tier,
+            "tama:" + tama.tier,
+            storage.total(),
+            List.copyOf(storage.entries()),
+            contentColor(tamaStack),
+            0,
+            java.util.Optional.empty()
+        );
     }
 
     // ── Interaction ─────────────────────────────────────────────────────────────
@@ -134,7 +233,7 @@ public class TamaItem extends Item {
             if (!level.isClientSide) {
                 TamaFilter f = tama.getOrDefault(MusubiDataComponents.TAMA_FILTER, TamaFilter.EMPTY);
                 player.displayClientMessage(
-                    Component.translatable("musubi.tama.binds_count", f.size(), filterCapacity()), true);
+                    Component.translatable("musubi.tama.binds_count", f.size(), filterCapacity(tama)), true);
             }
             return InteractionResultHolder.success(tama);
         }
@@ -163,9 +262,9 @@ public class TamaItem extends Item {
             player.displayClientMessage(Component.translatable("musubi.tama.forgot", name), true);
             level.playSound(null, player.blockPosition(), MusubiSounds.NEEDLE_COLLECT.get(),
                 SoundSource.PLAYERS, 0.4f, 0.7f);
-        } else if (filter.size() >= t.filterCapacity()) {
+        } else if (filter.size() >= t.filterCapacity(tama)) {
             player.displayClientMessage(
-                Component.translatable("musubi.tama.filter_full", t.filterCapacity()), true);
+                Component.translatable("musubi.tama.filter_full", t.filterCapacity(tama)), true);
         } else {
             tama.set(MusubiDataComponents.TAMA_FILTER, filter.with(id));
             player.displayClientMessage(Component.translatable("musubi.tama.taught", name), true);
@@ -226,7 +325,10 @@ public class TamaItem extends Item {
         if (moved > 0) {
             player.displayClientMessage(Component.translatable("musubi.tama.swept", moved), true);
             TamaStorage st = tama.getOrDefault(MusubiDataComponents.TAMA_STORAGE, TamaStorage.EMPTY);
-            spawnBurstParticles((ServerLevel) level, player, displayColor(st));
+            if (!st.isEmpty()) {
+                PacketDistributor.sendToPlayersTrackingEntityAndSelf(player,
+                    TamaBindVfxPayload.wrap(player, displayItemId(st), 12));
+            }
             level.playSound(null, player.blockPosition(), MusubiSounds.TAMA_BIND.get(),
                 SoundSource.PLAYERS, 0.7f, 1.0f);
         } else {
@@ -241,48 +343,73 @@ public class TamaItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> lines, TooltipFlag flag) {
         TamaFilter filter = stack.getOrDefault(MusubiDataComponents.TAMA_FILTER, TamaFilter.EMPTY);
         TamaStorage storage = stack.getOrDefault(MusubiDataComponents.TAMA_STORAGE, TamaStorage.EMPTY);
+        boolean showControls = net.minecraft.client.gui.screens.Screen.hasShiftDown();
 
-        lines.add(Component.translatable("musubi.tama.tier." + tier).withStyle(ChatFormatting.GRAY));
+        ChatFormatting accent = accentColor();
+        MusubiTooltip.addLine(lines, accent, "musubi.tama.tooltip.title");
+        lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tama.tooltip.tier"),
+            ChatFormatting.GRAY, Component.translatable("musubi.tama.tier." + tier), accent));
 
-        // What it's holding — the prominent line, with the per-type breakdown beneath.
         if (storage.isEmpty()) {
-            lines.add(Component.translatable("musubi.tama.empty").withStyle(ChatFormatting.DARK_GRAY));
+            MusubiTooltip.addLine(lines, ChatFormatting.DARK_GRAY, "musubi.tama.empty");
         } else {
-            lines.add(Component.translatable("musubi.tama.stored", storage.total(), storageCapacity())
-                .withStyle(ChatFormatting.AQUA));
+            lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tama.tooltip.storage"),
+                ChatFormatting.GRAY,
+                Component.literal(storage.total() + " / " + storageCapacity(stack) + " items"),
+                ChatFormatting.AQUA));
+            MusubiTooltip.addLine(lines, ChatFormatting.GRAY, "musubi.tama.tooltip.contents");
             int shown = 0;
             for (SkeinContents.VariantEntry e : storage.entries()) {
                 if (shown >= 4) {
-                    lines.add(Component.translatable("musubi.tama.more", storage.distinctTypes() - shown)
-                        .withStyle(ChatFormatting.DARK_GRAY));
+                    MusubiTooltip.addLine(lines, ChatFormatting.DARK_GRAY, "musubi.tama.more",
+                        storage.distinctTypes() - shown);
                     break;
                 }
-                lines.add(Component.translatable("musubi.tama.entry", itemName(e.itemId()), e.count())
-                    .withStyle(ChatFormatting.GRAY));
+                MusubiTooltip.addBullet(lines, ChatFormatting.DARK_GRAY, ChatFormatting.GRAY,
+                    Component.translatable("musubi.tama.entry", itemName(e.itemId()), e.count()));
                 shown++;
             }
         }
 
-        // What it's set to bind — shown as type names, clearly labelled (not a bare count).
         if (filter.size() == 0) {
-            lines.add(Component.translatable("musubi.tama.binds_empty").withStyle(ChatFormatting.DARK_GRAY));
+            MusubiTooltip.addLine(lines, ChatFormatting.DARK_GRAY, "musubi.tama.binds_empty");
         } else {
             Component names = joinNames(filter.items());
-            lines.add(Component.translatable("musubi.tama.binds", filter.size(), filterCapacity(), names)
-                .withStyle(ChatFormatting.DARK_GRAY));
+            lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tama.tooltip.bindings"),
+                ChatFormatting.GRAY,
+                Component.literal(filter.size() + " / " + filterCapacity(stack) + " types"),
+                ChatFormatting.DARK_AQUA));
+            lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tama.tooltip.binding_names"),
+                ChatFormatting.DARK_GRAY, names, ChatFormatting.GRAY));
         }
 
-        // Controls — collapsed behind Shift to keep the tooltip tidy.
-        if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) {
-            for (String key : new String[]{
-                "musubi.tama.help_attune", "musubi.tama.help_key", "musubi.tama.help_sweep",
-                "musubi.tama.help_worn", "musubi.tama.help_unload"}) {
-                lines.add(Component.translatable(key)
-                    .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
-            }
+        TamaAugments tamaAugments = tamaStackAugments(stack);
+        if (!tamaAugments.isEmpty()) {
+            lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tama.tooltip.augments"),
+                ChatFormatting.GRAY, joinNames(tamaAugments.items()),
+                ChatFormatting.LIGHT_PURPLE));
+        }
+
+        if (showControls) {
+            MusubiTooltip.addLine(lines, ChatFormatting.GOLD, "musubi.tama.help_controls");
+            MusubiTooltip.addJapaneseName(lines, "musubi.item.tama.lore");
+            lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tama.help_attune.label"),
+                ChatFormatting.GOLD, Component.translatable("musubi.tama.help_attune.value"),
+                ChatFormatting.GRAY));
+            lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tama.help_key.label"),
+                ChatFormatting.GOLD, Component.translatable("musubi.tama.help_key.value"),
+                ChatFormatting.GRAY));
+            lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tama.help_sweep.label"),
+                ChatFormatting.GOLD, Component.translatable("musubi.tama.help_sweep.value"),
+                ChatFormatting.GRAY));
+            lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tama.help_worn.label"),
+                ChatFormatting.GOLD, Component.translatable("musubi.tama.help_worn.value"),
+                ChatFormatting.GRAY));
+            lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tama.help_unload.label"),
+                ChatFormatting.GOLD, Component.translatable("musubi.tama.help_unload.value"),
+                ChatFormatting.GRAY));
         } else {
-            lines.add(Component.translatable("musubi.tama.help_more")
-                .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+            MusubiTooltip.addShiftPrompt(lines);
         }
     }
 
@@ -291,6 +418,10 @@ public class TamaItem extends Item {
         return BuiltInRegistries.ITEM.getOptional(id)
             .map(it -> (Component) Component.translatable(it.getDescriptionId()))
             .orElse(Component.literal(id.toString()));
+    }
+
+    private static TamaAugments tamaStackAugments(ItemStack stack) {
+        return stack.getOrDefault(MusubiDataComponents.TAMA_AUGMENTS, TamaAugments.EMPTY);
     }
 
     /** Comma-joined list of item names (first 6, then "…"). */
@@ -303,6 +434,15 @@ public class TamaItem extends Item {
         }
         if (ids.size() > max) out.append(", …");
         return out;
+    }
+
+    private ChatFormatting accentColor() {
+        return switch (tier) {
+            case 0 -> ChatFormatting.WHITE;
+            case 1 -> ChatFormatting.GOLD;
+            case 2 -> ChatFormatting.AQUA;
+            default -> ChatFormatting.LIGHT_PURPLE;
+        };
     }
 
     // ── Bind effect (pickup) ────────────────────────────────────────────────────
@@ -322,34 +462,27 @@ public class TamaItem extends Item {
         if (last != null && now - last < EFFECT_COOLDOWN) return;
         LAST_EFFECT.put(player.getUUID(), now);
 
-        spawnRisingThread(level, player, colorFromId(boundId.toString()));
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(player,
+            TamaBindVfxPayload.wrap(player, boundId, 12));
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
             MusubiSounds.TAMA_BIND.get(), SoundSource.PLAYERS,
             0.35f, 1.25f + level.random.nextFloat() * 0.35f);
     }
 
-    /** A short colored helix rising from the feet, capped with a sparkle where it becomes silk. */
-    private static void spawnRisingThread(ServerLevel level, Player player, int color) {
-        Vector3f rgb = unpackRgb(color);
-        double cx = player.getX(), cz = player.getZ();
-        double baseY = player.getY() + 0.1;
-        double phase = level.getGameTime() * 0.35;
+    /** Server-side flourish for a dropped item moving into a player's Tama. */
+    public static void playCollectionEffect(Player player, ItemEntity source, ResourceLocation itemId,
+                                            Vec3 targetAnchor, int stackCount) {
+        if (itemId == null || !(player.level() instanceof ServerLevel level)) return;
+        long now = level.getGameTime();
+        Long last = LAST_EFFECT.get(player.getUUID());
+        if (last != null && now - last < EFFECT_COOLDOWN) return;
+        LAST_EFFECT.put(player.getUUID(), now);
 
-        int points = 7;
-        for (int i = 0; i < points; i++) {
-            double t = i / (double) points;
-            double angle = t * Math.PI * 4.0 + phase;
-            double radius = 0.32 * (1.0 - t) + 0.04;
-            double x = cx + Math.cos(angle) * radius;
-            double z = cz + Math.sin(angle) * radius;
-            double y = baseY + t * 1.15;
-            // size 0 delta → a precise mote tracing the thread.
-            level.sendParticles(new DustParticleOptions(rgb, 0.9f), x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
-        }
-        // The thread of light drawing upward.
-        level.sendParticles(ParticleTypes.END_ROD, cx, baseY + 0.25, cz, 1, 0.02, 0.35, 0.02, 0.015);
-        // Sparkle at the top where the strand winds onto the tama.
-        level.sendParticles(ParticleTypes.ENCHANTED_HIT, cx, baseY + 1.05, cz, 2, 0.12, 0.08, 0.12, 0.04);
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(source,
+            TamaBindVfxPayload.collection(source, player, targetAnchor, itemId, Math.max(1, stackCount), 14, now));
+        level.playSound(null, source.getX(), source.getY(), source.getZ(),
+            MusubiSounds.TAMA_BIND.get(), SoundSource.PLAYERS,
+            0.35f, 1.15f + level.random.nextFloat() * 0.25f);
     }
 
     // ── Particle effects (sweep) ────────────────────────────────────────────────
@@ -359,14 +492,20 @@ public class TamaItem extends Item {
         return colorFromId(storage.entries().get(0).itemId().toString());
     }
 
+    /** Representative item id for visuals: the first stored item, or null when empty. */
+    private static ResourceLocation displayItemId(TamaStorage storage) {
+        if (storage.isEmpty()) return null;
+        return storage.entries().get(0).itemId();
+    }
+
     /** 0xRRGGBB tint for ambient/UI effects: the dominant stored type, or soft silk cream if empty. */
     public static int contentColor(ItemStack tamaStack) {
         return displayColor(tamaStack.getOrDefault(MusubiDataComponents.TAMA_STORAGE, TamaStorage.EMPTY));
     }
 
-    private static void spawnBurstParticles(ServerLevel level, Player player, int color) {
+    private static void spawnBurstParticles(ServerLevel level, Vec3 origin, int color) {
         Vector3f rgb = unpackRgb(color);
-        double px = player.getX(), py = player.getY() + 1.1, pz = player.getZ();
+        double px = origin.x, py = origin.y + 0.12, pz = origin.z;
         level.sendParticles(new DustParticleOptions(rgb, 2.0f), px, py, pz, 10, 0.4, 0.3, 0.4, 0.05);
         level.sendParticles(ParticleTypes.ENCHANTED_HIT, px, py, pz, 8, 0.35, 0.3, 0.35, 0.1);
         level.sendParticles(ParticleTypes.END_ROD, px, py, pz, 2, 0.1, 0.05, 0.1, 0.15);
