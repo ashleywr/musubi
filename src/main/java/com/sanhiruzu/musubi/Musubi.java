@@ -10,6 +10,7 @@ import com.sanhiruzu.musubi.loot.MusubiLootModifiers;
 import com.sanhiruzu.musubi.sound.MusubiSounds;
 import com.sanhiruzu.musubi.util.PlayerInventoryUtil;
 import com.sanhiruzu.musubi.worldgen.MusubiStructures;
+import com.sanhiruzu.musubi.worldgen.MusubiStructures;
 import com.sanhiruzu.musubi.network.MoonRiteVfxPayload;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.cauldron.CauldronInteraction;
@@ -45,6 +46,8 @@ public class Musubi {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public Musubi(IEventBus modEventBus, ModContainer modContainer) {
+        MusubiStructures.STRUCTURE_TYPES.register(modEventBus);
+        MusubiStructures.STRUCTURE_PIECES.register(modEventBus);
         MusubiDataComponents.COMPONENTS.register(modEventBus);
         MusubiItems.ITEMS.register(modEventBus);
         MusubiBlocks.BLOCKS.register(modEventBus);

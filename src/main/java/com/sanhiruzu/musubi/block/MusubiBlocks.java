@@ -52,6 +52,14 @@ public class MusubiBlocks {
                 .lightLevel(state -> 4)
         ));
 
+
+    public static final DeferredHolder<Block, ToriiBlock> TORII =
+        register("torii", () -> new ToriiBlock(
+            BlockBehaviour.Properties.of()
+                .strength(2.0f, 6.0f)
+                .sound(SoundType.WOOD)
+                .noOcclusion()
+        ));
     public static final DeferredHolder<Block, ToriiBlock> TORII =
         register("torii", () -> new ToriiBlock(
             BlockBehaviour.Properties.of()
