@@ -2,7 +2,10 @@ package com.sanhiruzu.musubi.item;
 
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickAction;
 import net.minecraft.world.inventory.Slot;
@@ -33,23 +36,52 @@ public class SkeinItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> lines, TooltipFlag flag) {
         SkeinContents contents = stack.get(MusubiDataComponents.SKEIN_CONTENTS);
+        boolean showDetails = net.minecraft.client.gui.screens.Screen.hasShiftDown();
         if (contents == null) {
-            lines.add(Component.translatable("musubi.skein.empty"));
+            MusubiTooltip.addLine(lines, ChatFormatting.DARK_GRAY, "musubi.skein.empty");
+            if (showDetails) {
+                lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tooltip.state"),
+                    ChatFormatting.GOLD, Component.translatable("musubi.skein.empty_hint"),
+                    ChatFormatting.GRAY));
+            } else {
+                MusubiTooltip.addShiftPrompt(lines);
+            }
             return;
         }
 
-        if (contents.isTagGrouped()) {
-            lines.add(Component.translatable("musubi.skein.contents_tag",
-                contents.groupKey(), contents.count()));
-        } else {
-            lines.add(Component.translatable("musubi.skein.contents_item",
-                contents.groupKey(), contents.count()));
-        }
+        MusubiTooltip.addLine(lines,
+            contents.isTagGrouped() ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GOLD,
+            contents.isTagGrouped() ? "musubi.skein.kind_tag" : "musubi.skein.kind_item");
 
-        if (flag.isAdvanced() && !contents.variants().isEmpty()) {
-            contents.variants().forEach(v ->
-                lines.add(Component.literal("  " + v.itemId() + " × " + v.count()))
-            );
+        if (showDetails) {
+            lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.tooltip.target"),
+                ChatFormatting.GOLD, groupComponent(contents),
+                contents.isTagGrouped() ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GOLD));
+            lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.skein.count"),
+                ChatFormatting.GOLD, Component.literal(Integer.toString(contents.count())),
+                ChatFormatting.AQUA));
+
+            if (!contents.variants().isEmpty()) {
+                lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.skein.variants"),
+                    ChatFormatting.GOLD, Component.literal(Integer.toString(contents.variants().size())),
+                    ChatFormatting.GRAY));
+                contents.variants().forEach(v ->
+                    MusubiTooltip.addBullet(lines, ChatFormatting.DARK_GRAY, ChatFormatting.GRAY,
+                        Component.literal("").append(itemName(v.itemId()))
+                            .append(Component.literal(" x " + v.count())))
+                );
+            }
+
+            if (flag.isAdvanced()) {
+                lines.add(MusubiTooltip.labelValue(Component.translatable("musubi.skein.complexity"),
+                    ChatFormatting.GOLD, Component.literal(Integer.toString(contents.complexityScore())),
+                    ChatFormatting.GRAY));
+                contents.dataRef().ifPresent(id -> lines.add(MusubiTooltip.labelValue(
+                    Component.translatable("musubi.skein.data_ref"), ChatFormatting.GOLD,
+                    Component.literal(id.toString()), ChatFormatting.DARK_AQUA)));
+            }
+        } else {
+            MusubiTooltip.addShiftPrompt(lines);
         }
     }
 
@@ -84,4 +116,19 @@ public class SkeinItem extends Item {
     }
 
     // TODO: right-click-to-deposit shortcut (shift-right-click spool rack with skein in hand)
+
+    private static Component groupComponent(SkeinContents contents) {
+        ResourceLocation id = ResourceLocation.tryParse(contents.groupKey());
+        if (id == null) return Component.literal(contents.groupKey());
+        Component value = contents.isTagGrouped()
+            ? Component.literal("#").append(itemName(id))
+            : itemName(id);
+        return value;
+    }
+
+    private static Component itemName(ResourceLocation id) {
+        return BuiltInRegistries.ITEM.getOptional(id)
+            .map(it -> (Component) Component.translatable(it.getDescriptionId()))
+            .orElse(Component.literal(id.toString()));
+    }
 }

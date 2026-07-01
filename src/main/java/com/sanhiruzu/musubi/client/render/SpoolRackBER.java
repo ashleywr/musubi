@@ -33,24 +33,31 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
         ResourceLocation.fromNamespaceAndPath("musubi", "textures/item/skein.png");
     private static final ResourceLocation SHIMMER_TEX =
         ResourceLocation.fromNamespaceAndPath("musubi", "textures/item/skein_shimmer.png");
+    private static final ResourceLocation EDGE_TEX =
+        ResourceLocation.fromNamespaceAndPath("musubi", "textures/item/skein_depth.png");
     private static final RenderType RENDER_TYPE   = RenderType.entityCutout(SKEIN_TEX);
     private static final RenderType SHIMMER_TYPE  = RenderType.entityTranslucentCull(SHIMMER_TEX);
+    private static final RenderType EDGE_TYPE     = RenderType.entityCutout(EDGE_TEX);
 
     // Peg X centers in 0–1 block space (model is defined for NORTH facing).
     private static final float[] PEG_X = { 2f/16f, 6f/16f, 10f/16f, 14f/16f };
     private static final float   PEG_Y = 13f/16f;  // top surface = pendulum pivot
     private static final float   PEG_Z = 9f/16f;   // midpoint along peg length (z=4..14)
 
-    // Skein dimensions scale linearly with slot fill (0 → 1).
-    private static final float PENDULUM_MIN = 0.18f,  PENDULUM_MAX = 0.30f;
-    private static final float SKEIN_W_MIN  = 0.12f,  SKEIN_W_MAX  = 0.28f;
-    private static final float SKEIN_H_MIN  = 0.20f,  SKEIN_H_MAX  = 0.58f;
+    // The rack can hold thousands of items, but the display needs to read at
+    // ordinary stack sizes. We therefore map count to a visual fullness curve
+    // and then switch the silhouette from loop -> hank -> bundled strands.
+    private static final float VISUAL_FULL_COUNT = 256f;
+    private static final float LOOP_STAGE_END    = 0.34f;
+    private static final float HANK_STAGE_END    = 0.76f;
+    private static final float TAU               = (float) (Math.PI * 2.0);
 
     private static final float KICK_BASE   = 0.28f;
     private static final float KICK_JITTER = 0.14f;
 
     private record SkeinRenderData(int pegIndex, float angle, int color, int shimmerRgb,
-                                   float pendulumLen, float skeinW, float skeinH) {}
+                                   float pendulumLen, float skeinW, float skeinH, float skeinD,
+                                   int strandCount) {}
 
     /** Accumulated per-position pendulum state. Entries are never evicted;
      *  the leak is negligible (a few hundred bytes per rack ever placed). */
@@ -80,7 +87,6 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
         pose.translate(-0.5, -0.5, -0.5);
 
         PoseStack.Pose poseEntry  = pose.last();
-        VertexConsumer vc         = buffers.getBuffer(RENDER_TYPE);
         int rainbowRgb = MusubiClient.rainbowColor() & 0xFFFFFF;
         SkeinRenderData[] renderData = new SkeinRenderData[SpoolRackBlockEntity.SLOTS];
 
@@ -103,17 +109,54 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
             var itemId = be.getSlotItem(i);
             int color  = (itemId != null) ? MusubiClient.getDominantColor(itemId) : 0xC8A864;
 
-            float fill   = Math.min(1f, count / (float) SpoolRackBlockEntity.SLOT_CAPACITY);
-            float pLen   = PENDULUM_MIN + (PENDULUM_MAX - PENDULUM_MIN) * fill;
-            float skeinW = SKEIN_W_MIN  + (SKEIN_W_MAX  - SKEIN_W_MIN)  * fill;
-            float skeinH = SKEIN_H_MIN  + (SKEIN_H_MAX  - SKEIN_H_MIN)  * fill;
+            float storageFill = Math.min(1f, count / VISUAL_FULL_COUNT);
+            float visualFill = (float) Math.sqrt(storageFill);
+            int stage = visualFill < LOOP_STAGE_END ? 0 : (visualFill < HANK_STAGE_END ? 1 : 2);
+            float stageMix = switch (stage) {
+                case 0 -> visualFill / LOOP_STAGE_END;
+                case 1 -> (visualFill - LOOP_STAGE_END) / (HANK_STAGE_END - LOOP_STAGE_END);
+                default -> (visualFill - HANK_STAGE_END) / (1f - HANK_STAGE_END);
+            };
+
+            float pLen = switch (stage) {
+                case 0 -> lerp(0.34f, 0.28f, stageMix);
+                case 1 -> lerp(0.28f, 0.31f, stageMix);
+                default -> lerp(0.29f, 0.33f, stageMix);
+            };
+            float skeinW = switch (stage) {
+                case 0 -> lerp(0.15f, 0.22f, stageMix);
+                case 1 -> lerp(0.24f, 0.30f, stageMix);
+                default -> lerp(0.30f, 0.37f, stageMix);
+            };
+            float skeinH = switch (stage) {
+                case 0 -> lerp(0.28f, 0.40f, stageMix);
+                case 1 -> lerp(0.42f, 0.54f, stageMix);
+                default -> lerp(0.56f, 0.68f, stageMix);
+            };
+            float skeinD = switch (stage) {
+                case 0 -> lerp(0.018f, 0.024f, stageMix);
+                case 1 -> lerp(0.028f, 0.035f, stageMix);
+                default -> lerp(0.040f, 0.050f, stageMix);
+            };
+            int strandCount = stage == 0 ? 1 : (stage == 1 ? 3 : 5);
 
             // Ambient sway: slow sine so skeins are never completely still.
             float ambient = (float)(Math.sin(gameTick * 0.04 + i * 1.5 + partialTick * 0.04) * 0.012);
             float angle   = p.lerpAngle(partialTick) + ambient;
 
-            renderData[i] = new SkeinRenderData(i, angle, color, rainbowRgb, pLen, skeinW, skeinH);
-            drawSkeinBase(poseEntry, vc, renderData[i]);
+            renderData[i] = new SkeinRenderData(i, angle, color, rainbowRgb, pLen, skeinW, skeinH, skeinD, strandCount);
+        }
+
+        VertexConsumer vc = buffers.getBuffer(RENDER_TYPE);
+        for (SkeinRenderData data : renderData) {
+            if (data == null) continue;
+            drawSkeinFaces(poseEntry, vc, data);
+        }
+
+        VertexConsumer edgeVc = buffers.getBuffer(EDGE_TYPE);
+        for (SkeinRenderData data : renderData) {
+            if (data == null) continue;
+            drawSkeinEdges(poseEntry, edgeVc, data);
         }
 
         VertexConsumer shimmerVc  = buffers.getBuffer(SHIMMER_TYPE);
@@ -125,31 +168,99 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
         pose.popPose();
     }
 
-    private static void drawSkeinBase(PoseStack.Pose poseEntry, VertexConsumer vc, SkeinRenderData data) {
+    private static void drawSkeinFaces(PoseStack.Pose poseEntry, VertexConsumer vc, SkeinRenderData data) {
         float cx = PEG_X[data.pegIndex()];
         float cy = PEG_Y - data.pendulumLen() * (float) Math.cos(data.angle());
         float cz = PEG_Z + data.pendulumLen() * (float) Math.sin(data.angle());
 
-        float w2 = data.skeinW() / 2f;
-        float h2 = data.skeinH() / 2f;
+        int strands = data.strandCount();
         int color = data.color();
         int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
 
         Matrix4f m = poseEntry.pose();
 
-        // Base layer — front and back faces.
-        quad(vc, m, poseEntry,
-             cx - w2, cy + h2, cz,   0f, 0f,
-             cx + w2, cy + h2, cz,   1f, 0f,
-             cx + w2, cy - h2, cz,   1f, 1f,
-             cx - w2, cy - h2, cz,   0f, 1f,
-             r, g, b, 255, 0f, 0f, -1f);
-        quad(vc, m, poseEntry,
-             cx - w2, cy - h2, cz,   0f, 1f,
-             cx + w2, cy - h2, cz,   1f, 1f,
-             cx + w2, cy + h2, cz,   1f, 0f,
-             cx - w2, cy + h2, cz,   0f, 0f,
-             r, g, b, 255, 0f, 0f, 1f);
+        float baseBundleW = data.skeinW();
+        float baseBundleH = data.skeinH();
+        float baseBundleD = data.skeinD();
+        float widthScale = strands == 1 ? 1.0f : (strands == 3 ? 0.60f : 0.43f);
+        float heightScale = strands == 1 ? 1.0f : (strands == 3 ? 0.92f : 0.84f);
+        float depthScale = strands == 1 ? 1.0f : (strands == 3 ? 1.08f : 1.12f);
+        float ringX = strands == 1 ? 0.0f : (strands == 3 ? 0.016f : 0.022f);
+        float ringY = strands == 1 ? 0.0f : (strands == 3 ? 0.028f : 0.040f);
+        float ringZ = strands == 1 ? 0.0f : (strands == 3 ? 0.010f : 0.014f);
+
+        for (int strand = 0; strand < strands; strand++) {
+            float t = (strands == 1) ? 0.5f : strand / (float) (strands - 1);
+            float phase = t * TAU + data.angle() * 0.55f + data.pegIndex() * 0.8f;
+            float twist = (float) Math.sin(phase * 1.3f);
+            float curl = (float) Math.cos(phase);
+            float strandX = curl * ringX;
+            float strandY = -Math.abs(twist) * ringY - (strands == 1 ? 0.0f : 0.010f);
+            float strandZ = twist * ringZ;
+            float strandW = baseBundleW * widthScale;
+            float strandH = baseBundleH * heightScale;
+            float strandD = baseBundleD * depthScale;
+            float w2 = strandW / 2f;
+            float h2 = strandH / 2f;
+            float d2 = strandD / 2f;
+            float squeeze = strands == 1 ? 1f : 1f - 0.08f * Math.abs(twist);
+            float lift = strands == 1 ? 0f : 0.012f * (1f - Math.abs(twist));
+            int alpha = strands == 1 ? 255 : (strand == 0 || strand == strands - 1 ? 210 : 245);
+
+            drawRibbonFaces(vc, m, poseEntry,
+                cx + strandX,
+                cy + strandY + lift,
+                cz + strandZ,
+                w2 * squeeze,
+                h2 * squeeze,
+                d2,
+                r, g, b, alpha);
+        }
+    }
+
+    private static void drawSkeinEdges(PoseStack.Pose poseEntry, VertexConsumer edgeVc, SkeinRenderData data) {
+        float cx = PEG_X[data.pegIndex()];
+        float cy = PEG_Y - data.pendulumLen() * (float) Math.cos(data.angle());
+        float cz = PEG_Z + data.pendulumLen() * (float) Math.sin(data.angle());
+
+        int strands = data.strandCount();
+        int color = data.color();
+        int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
+
+        Matrix4f m = poseEntry.pose();
+
+        float baseBundleW = data.skeinW();
+        float baseBundleH = data.skeinH();
+        float baseBundleD = data.skeinD();
+        float widthScale = strands == 1 ? 1.0f : (strands == 3 ? 0.60f : 0.43f);
+        float heightScale = strands == 1 ? 1.0f : (strands == 3 ? 0.92f : 0.84f);
+        float depthScale = strands == 1 ? 1.0f : (strands == 3 ? 1.08f : 1.12f);
+        float ringX = strands == 1 ? 0.0f : (strands == 3 ? 0.016f : 0.022f);
+        float ringY = strands == 1 ? 0.0f : (strands == 3 ? 0.028f : 0.040f);
+        float ringZ = strands == 1 ? 0.0f : (strands == 3 ? 0.010f : 0.014f);
+
+        for (int strand = 0; strand < strands; strand++) {
+            float t = (strands == 1) ? 0.5f : strand / (float) (strands - 1);
+            float phase = t * TAU + data.angle() * 0.55f + data.pegIndex() * 0.8f;
+            float twist = (float) Math.sin(phase * 1.3f);
+            float curl = (float) Math.cos(phase);
+            float strandX = curl * ringX;
+            float strandY = -Math.abs(twist) * ringY - (strands == 1 ? 0.0f : 0.010f);
+            float strandZ = twist * ringZ;
+            float strandW = baseBundleW * widthScale;
+            float strandH = baseBundleH * heightScale;
+            float strandD = baseBundleD * depthScale;
+            float w2 = strandW / 2f;
+            float h2 = strandH / 2f;
+            float d2 = strandD / 2f;
+            float squeeze = strands == 1 ? 1f : 1f - 0.08f * Math.abs(twist);
+            float lift = strands == 1 ? 0f : 0.012f * (1f - Math.abs(twist));
+            int alpha = strands == 1 ? 160 : (strand == 0 || strand == strands - 1 ? 100 : 145);
+
+            // Edges give the skein depth so the bundle doesn't read as a flat billboard.
+            drawEdgeBox(edgeVc, m, poseEntry, cx + strandX, cy + strandY + lift, cz + strandZ,
+                w2 * squeeze, h2 * squeeze, d2, (int) (r * 0.72f), (int) (g * 0.72f), (int) (b * 0.72f), alpha);
+        }
     }
 
     private static void drawSkeinShimmer(PoseStack.Pose poseEntry, VertexConsumer shimmerVc, SkeinRenderData data) {
@@ -157,28 +268,105 @@ public class SpoolRackBER implements BlockEntityRenderer<SpoolRackBlockEntity> {
         float cy = PEG_Y - data.pendulumLen() * (float) Math.cos(data.angle());
         float cz = PEG_Z + data.pendulumLen() * (float) Math.sin(data.angle());
 
-        float w2 = data.skeinW() / 2f;
-        float h2 = data.skeinH() / 2f;
+        int strands = data.strandCount();
         int shimmerRgb = data.shimmerRgb();
         int sr = (shimmerRgb >> 16) & 0xFF, sg = (shimmerRgb >> 8) & 0xFF, sb = shimmerRgb & 0xFF;
 
         Matrix4f m = poseEntry.pose();
 
-        // Shimmer overlay — offset slightly toward each face's viewer to avoid z-fighting.
-        float czF = cz - 0.001f;
-        float czB = cz + 0.001f;
-        quad(shimmerVc, m, poseEntry,
-             cx - w2, cy + h2, czF,  0f, 0f,
-             cx + w2, cy + h2, czF,  1f, 0f,
-             cx + w2, cy - h2, czF,  1f, 1f,
-             cx - w2, cy - h2, czF,  0f, 1f,
-             sr, sg, sb, 160, 0f, 0f, -1f);
-        quad(shimmerVc, m, poseEntry,
-             cx - w2, cy - h2, czB,  0f, 1f,
-             cx + w2, cy - h2, czB,  1f, 1f,
-             cx + w2, cy + h2, czB,  1f, 0f,
-             cx - w2, cy + h2, czB,  0f, 0f,
-             sr, sg, sb, 160, 0f, 0f, 1f);
+        float ringX = strands == 1 ? 0.0f : (strands == 3 ? 0.016f : 0.022f);
+        float ringY = strands == 1 ? 0.0f : (strands == 3 ? 0.028f : 0.040f);
+        float ringZ = strands == 1 ? 0.0f : (strands == 3 ? 0.010f : 0.014f);
+        float widthScale = strands == 1 ? 1.0f : (strands == 3 ? 0.60f : 0.43f);
+        float heightScale = strands == 1 ? 1.0f : (strands == 3 ? 0.92f : 0.84f);
+        float depthScale = strands == 1 ? 1.0f : (strands == 3 ? 1.08f : 1.12f);
+
+        for (int strand = 0; strand < strands; strand++) {
+            float t = (strands == 1) ? 0.5f : strand / (float) (strands - 1);
+            float phase = t * TAU + data.angle() * 0.55f + data.pegIndex() * 0.8f;
+            float twist = (float) Math.sin(phase * 1.3f);
+            float curl = (float) Math.cos(phase);
+            float strandX = curl * ringX;
+            float strandY = -Math.abs(twist) * ringY - (strands == 1 ? 0.0f : 0.010f);
+            float strandZ = twist * ringZ;
+            float strandW = data.skeinW() * widthScale;
+            float strandH = data.skeinH() * heightScale;
+            float strandD = data.skeinD() * depthScale;
+            float w2 = strandW / 2f;
+            float h2 = strandH / 2f;
+            float d2 = strandD / 2f;
+            float squeeze = strands == 1 ? 1f : 1f - 0.08f * Math.abs(twist);
+            float lift = strands == 1 ? 0f : 0.012f * (1f - Math.abs(twist));
+            int alpha = strands == 1 ? 160 : (strand == 0 || strand == strands - 1 ? 100 : 145);
+
+            // Shimmer sits on each strand so the bundle reads as woven mass, not flat foil.
+            float czF = cz + strandZ + d2 - 0.001f;
+            float czB = cz + strandZ - d2 + 0.001f;
+            quad(shimmerVc, m, poseEntry,
+                 cx + strandX - w2 * squeeze, cy + strandY + lift + h2 * squeeze, czF,  0f, 0f,
+                 cx + strandX + w2 * squeeze, cy + strandY + lift + h2 * squeeze, czF,  1f, 0f,
+                 cx + strandX + w2 * squeeze, cy + strandY + lift - h2 * squeeze, czF,  1f, 1f,
+                 cx + strandX - w2 * squeeze, cy + strandY + lift - h2 * squeeze, czF,  0f, 1f,
+                 sr, sg, sb, alpha, 0f, 0f, -1f);
+            quad(shimmerVc, m, poseEntry,
+                 cx + strandX - w2 * squeeze, cy + strandY + lift - h2 * squeeze, czB,  0f, 1f,
+                 cx + strandX + w2 * squeeze, cy + strandY + lift - h2 * squeeze, czB,  1f, 1f,
+                 cx + strandX + w2 * squeeze, cy + strandY + lift + h2 * squeeze, czB,  1f, 0f,
+                 cx + strandX - w2 * squeeze, cy + strandY + lift + h2 * squeeze, czB,  0f, 0f,
+                 sr, sg, sb, alpha, 0f, 0f, 1f);
+        }
+    }
+
+    private static void drawRibbonFaces(VertexConsumer vc, Matrix4f m, PoseStack.Pose poseEntry,
+                                        float cx, float cy, float cz,
+                                        float w2, float h2, float d2,
+                                        int r, int g, int b, int a) {
+        quad(vc, m, poseEntry,
+             cx - w2, cy + h2, cz + d2,   0f, 0f,
+             cx + w2, cy + h2, cz + d2,   1f, 0f,
+             cx + w2, cy - h2, cz + d2,   1f, 1f,
+             cx - w2, cy - h2, cz + d2,   0f, 1f,
+             r, g, b, a, 0f, 0f, -1f);
+        quad(vc, m, poseEntry,
+             cx - w2, cy - h2, cz - d2,   0f, 1f,
+             cx + w2, cy - h2, cz - d2,   1f, 1f,
+             cx + w2, cy + h2, cz - d2,   1f, 0f,
+             cx - w2, cy + h2, cz - d2,   0f, 0f,
+             r, g, b, a, 0f, 0f, 1f);
+    }
+
+    private static void drawEdgeBox(VertexConsumer edgeVc, Matrix4f m, PoseStack.Pose poseEntry,
+                                    float cx, float cy, float cz, float w2, float h2, float d2,
+                                    int r, int g, int b, int a) {
+        // Sides: left, right, top, bottom.
+        quad(edgeVc, m, poseEntry,
+             cx - w2, cy + h2, cz - d2,  0f, 0f,
+             cx - w2, cy + h2, cz + d2,  1f, 0f,
+             cx - w2, cy - h2, cz + d2,  1f, 1f,
+             cx - w2, cy - h2, cz - d2,  0f, 1f,
+             r, g, b, a, -1f, 0f, 0f);
+        quad(edgeVc, m, poseEntry,
+             cx + w2, cy + h2, cz + d2,  0f, 0f,
+             cx + w2, cy + h2, cz - d2,  1f, 0f,
+             cx + w2, cy - h2, cz - d2,  1f, 1f,
+             cx + w2, cy - h2, cz + d2,  0f, 1f,
+             r, g, b, a, 1f, 0f, 0f);
+        quad(edgeVc, m, poseEntry,
+             cx - w2, cy + h2, cz + d2,  0f, 0f,
+             cx + w2, cy + h2, cz + d2,  1f, 0f,
+             cx + w2, cy + h2, cz - d2,  1f, 1f,
+             cx - w2, cy + h2, cz - d2,  0f, 1f,
+             r, g, b, a, 0f, 1f, 0f);
+        quad(edgeVc, m, poseEntry,
+             cx - w2, cy - h2, cz - d2,  0f, 1f,
+             cx + w2, cy - h2, cz - d2,  1f, 1f,
+             cx + w2, cy - h2, cz + d2,  1f, 0f,
+             cx - w2, cy - h2, cz + d2,  0f, 0f,
+             r, g, b, a, 0f, -1f, 0f);
+    }
+
+    private static float lerp(float start, float end, float t) {
+        return start + (end - start) * t;
     }
 
     private static void quad(VertexConsumer vc, Matrix4f m, PoseStack.Pose pose,

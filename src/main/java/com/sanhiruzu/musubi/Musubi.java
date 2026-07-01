@@ -8,6 +8,7 @@ import com.sanhiruzu.musubi.item.MusubiCreativeTabs;
 import com.sanhiruzu.musubi.item.MusubiItems;
 import com.sanhiruzu.musubi.loot.MusubiLootModifiers;
 import com.sanhiruzu.musubi.sound.MusubiSounds;
+import com.sanhiruzu.musubi.util.PlayerInventoryUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.sounds.SoundEvents;
@@ -41,6 +42,7 @@ public class Musubi {
         MusubiBlocks.BLOCKS.register(modEventBus);
         MusubiBlocks.BLOCK_ITEMS.register(modEventBus);
         MusubiBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        com.sanhiruzu.musubi.recipe.MusubiRecipes.SERIALIZERS.register(modEventBus);
         MusubiSounds.SOUNDS.register(modEventBus);
         MusubiLootModifiers.LOOT_MODIFIERS.register(modEventBus);
         MusubiCreativeTabs.TABS.register(modEventBus);
@@ -69,7 +71,7 @@ public class Musubi {
                     int count = stack.getCount();
                     stack.shrink(count);
                     ItemStack silk = new ItemStack(MusubiItems.SILK_THREAD.get(), count);
-                    player.getInventory().placeItemBackInInventory(silk);
+                    PlayerInventoryUtil.giveDirect(player, silk);
                     LayeredCauldronBlock.lowerFillLevel(state, level, pos);
                     level.playSound(null, pos, SoundEvents.BUCKET_EMPTY,
                         SoundSource.BLOCKS, 0.5f, 1.1f);

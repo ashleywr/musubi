@@ -1,12 +1,12 @@
 {
   "variants": {
-    "facing=north,winding=false": { "model": "musubi:block/marudai" },
-    "facing=east,winding=false":  { "model": "musubi:block/marudai", "y": 90 },
-    "facing=south,winding=false": { "model": "musubi:block/marudai", "y": 180 },
-    "facing=west,winding=false":  { "model": "musubi:block/marudai", "y": 270 },
-    "facing=north,winding=true":  { "model": "musubi:block/marudai" },
-    "facing=east,winding=true":   { "model": "musubi:block/marudai", "y": 90 },
-    "facing=south,winding=true":  { "model": "musubi:block/marudai", "y": 180 },
-    "facing=west,winding=true":   { "model": "musubi:block/marudai", "y": 270 }
+    "facing=north,winding=false": { "model": "musubi:block/marudai_base" },
+    "facing=east,winding=false":  { "model": "musubi:block/marudai_base", "y": 90 },
+    "facing=south,winding=false": { "model": "musubi:block/marudai_base", "y": 180 },
+    "facing=west,winding=false":  { "model": "musubi:block/marudai_base", "y": 270 },
+    "facing=north,winding=true":  { "model": "musubi:block/marudai_base" },
+    "facing=east,winding=true":   { "model": "musubi:block/marudai_base", "y": 90 },
+    "facing=south,winding=true":  { "model": "musubi:block/marudai_base", "y": 180 },
+    "facing=west,winding=true":   { "model": "musubi:block/marudai_base", "y": 270 }
   }
 }

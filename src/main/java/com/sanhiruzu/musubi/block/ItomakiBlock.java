@@ -4,8 +4,13 @@ import com.mojang.serialization.MapCodec;
 import com.sanhiruzu.musubi.blockentity.ItomakiBlockEntity;
 import com.sanhiruzu.musubi.blockentity.MusubiBlockEntities;
 import com.sanhiruzu.musubi.item.TamaItem;
+import com.sanhiruzu.musubi.sound.MusubiSounds;
+import com.sanhiruzu.musubi.util.PlayerInventoryUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -33,6 +38,7 @@ import javax.annotation.Nullable;
  * it unspools its contents onto nearby Spool Racks.
  *
  * Right-click with Tama      → place Tama on the pedestal, begin unspooling.
+ * Right-click with matching items → return them to the loaded Tama.
  * Right-click with empty hand → retrieve the Tama (pauses if still spooling).
  * Break the block             → Tama is dropped.
  */
@@ -71,15 +77,48 @@ public class ItomakiBlock extends BaseEntityBlock {
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
             BlockPos pos, Player player, net.minecraft.world.InteractionHand hand,
             BlockHitResult hit) {
-        if (!(stack.getItem() instanceof TamaItem)) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        if (level.isClientSide) return ItemInteractionResult.SUCCESS;
+        if (stack.getItem() instanceof TamaItem) {
+            if (level.isClientSide) return ItemInteractionResult.SUCCESS;
 
-        if (level.getBlockEntity(pos) instanceof ItomakiBlockEntity be) {
-            if (be.hasTama()) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-            be.insertTama(stack);
-            level.setBlock(pos, state.setValue(SPOOLING, true), 3);
+            if (level.getBlockEntity(pos) instanceof ItomakiBlockEntity be) {
+                if (be.hasTama()) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+                be.insertTama(stack);
+                level.setBlock(pos, state.setValue(SPOOLING, true), 3);
+            }
+            return ItemInteractionResult.SUCCESS;
         }
-        return ItemInteractionResult.SUCCESS;
+
+        if (level.getBlockEntity(pos) instanceof ItomakiBlockEntity be && be.hasTama()) {
+            if (!level.isClientSide) {
+                ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+                if (id == null || !TamaItem.accepts(be.getTama(), id)) {
+                    return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+                }
+
+                int deposited = be.depositIntoTama(stack);
+                if (deposited <= 0) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+
+                BlockState updated = state;
+                if (!state.getValue(SPOOLING)) {
+                    updated = state.setValue(SPOOLING, true);
+                    level.setBlock(pos, updated, 3);
+                }
+                level.sendBlockUpdated(pos, updated, updated, 3);
+                level.playSound(null, pos, MusubiSounds.TAMA_BIND.get(), SoundSource.BLOCKS,
+                    0.55f, 1.0f + level.random.nextFloat() * 0.1f);
+                TamaItem.playBindEffect(player, id);
+                player.displayClientMessage(
+                    net.minecraft.network.chat.Component.translatable("musubi.tama.returned", deposited), true);
+                return ItemInteractionResult.CONSUME;
+            }
+
+            ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+            if (id != null && TamaItem.accepts(be.getTama(), id)) {
+                return ItemInteractionResult.SUCCESS;
+            }
+        }
+
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     /** Right-click with empty hand → retrieve the Tama. */
@@ -91,9 +130,7 @@ public class ItomakiBlock extends BaseEntityBlock {
         if (level.getBlockEntity(pos) instanceof ItomakiBlockEntity be && be.hasTama()) {
             ItemStack tama = be.retrieveTama();
             level.setBlock(pos, state.setValue(SPOOLING, false), 3);
-            if (!player.getInventory().add(tama)) {
-                player.drop(tama, false);
-            }
+            PlayerInventoryUtil.giveDirect(player, tama);
             return InteractionResult.SUCCESS;
         }
         return InteractionResult.PASS;

@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:paper" },
+    { "item": "musubi:silk_thread" }
+  ],
+  "result": {
+    "id": "musubi:weaving_pattern",
+    "count": 1
+  }
+}

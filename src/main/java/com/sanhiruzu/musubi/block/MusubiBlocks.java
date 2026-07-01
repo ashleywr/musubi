@@ -1,8 +1,8 @@
 package com.sanhiruzu.musubi.block;
 
 import com.sanhiruzu.musubi.Musubi;
+import com.sanhiruzu.musubi.item.MusubiBlockItem;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -76,6 +76,14 @@ public class MusubiBlocks {
                 .lightLevel(state -> 3)
         ));
 
+    public static final DeferredHolder<Block, LoomBlock> LOOM =
+        register("loom", () -> new LoomBlock(
+            BlockBehaviour.Properties.of()
+                .strength(2.5f, 6.0f)
+                .sound(SoundType.WOOD)
+                .noOcclusion()
+        ));
+
     /** Placed only via SilkwormItem — no BlockItem. */
     public static final DeferredHolder<Block, SilkwormBlock> SILKWORM =
         registerNoItem("silkworm", () -> new SilkwormBlock(
@@ -89,7 +97,7 @@ public class MusubiBlocks {
 
     private static <T extends Block> DeferredHolder<Block, T> register(String name, Supplier<T> block) {
         DeferredHolder<Block, T> holder = BLOCKS.register(name, block);
-        BLOCK_ITEMS.register(name, () -> new BlockItem(holder.get(), new Item.Properties()));
+        BLOCK_ITEMS.register(name, () -> new MusubiBlockItem(holder.get(), new Item.Properties()));
         return holder;
     }
 

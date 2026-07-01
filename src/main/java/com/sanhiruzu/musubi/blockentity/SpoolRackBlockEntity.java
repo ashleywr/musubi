@@ -1,6 +1,8 @@
 package com.sanhiruzu.musubi.blockentity;
 
 import com.sanhiruzu.musubi.component.SkeinContents;
+import com.sanhiruzu.musubi.block.SpoolRackBlock;
+import com.sanhiruzu.musubi.util.PlayerInventoryUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -45,6 +47,12 @@ public class SpoolRackBlockEntity extends BlockEntity {
         super(MusubiBlockEntities.SPOOL_RACK.get(), pos, state);
     }
 
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        syncLoadedState();
+    }
+
     // ── Deposit ───────────────────────────────────────────────────────────────
 
     /**
@@ -63,6 +71,7 @@ public class SpoolRackBlockEntity extends BlockEntity {
             }
         }
         setChanged();
+        syncLoadedState();
         if (remaining.isEmpty()) return null;
         int remainingCount = remaining.stream().mapToInt(SkeinContents.VariantEntry::count).sum();
         return new SkeinContents(
@@ -99,8 +108,24 @@ public class SpoolRackBlockEntity extends BlockEntity {
      */
     public int tryDeposit(ResourceLocation itemId, int amount) {
         int deposited = depositItem(itemId, amount);
-        if (deposited > 0) setChanged();
+        if (deposited > 0) {
+            setChanged();
+            syncLoadedState();
+        }
         return deposited;
+    }
+
+    /**
+     * Extracts up to {@code amount} items of the given type from this rack.
+     * Returns the number actually extracted.
+     */
+    public int tryExtract(ResourceLocation itemId, int amount) {
+        int extracted = extractItem(itemId, amount);
+        if (extracted > 0) {
+            setChanged();
+            syncLoadedState();
+        }
+        return extracted;
     }
 
     /**
@@ -129,6 +154,21 @@ public class SpoolRackBlockEntity extends BlockEntity {
         return 0;
     }
 
+    /**
+     * Removes up to {@code amount} items of the given type from the rack.
+     * Returns the number actually removed.
+     */
+    private int extractItem(ResourceLocation itemId, int amount) {
+        for (int i = 0; i < SLOTS; i++) {
+            if (!itemId.equals(itemIds[i]) || counts[i] <= 0) continue;
+            int extracted = Math.min(counts[i], amount);
+            counts[i] -= extracted;
+            if (counts[i] == 0) clearSlot(i);
+            return extracted;
+        }
+        return 0;
+    }
+
     // ── Extraction ────────────────────────────────────────────────────────────
 
     /**
@@ -140,6 +180,8 @@ public class SpoolRackBlockEntity extends BlockEntity {
                 Item item = BuiltInRegistries.ITEM.getOptional(itemIds[i]).orElse(Items.AIR);
                 if (item == Items.AIR) {
                     clearSlot(i);
+                    setChanged();
+                    syncLoadedState();
                     continue;
                 }
                 int amount = Math.min(64, counts[i]);
@@ -147,6 +189,7 @@ public class SpoolRackBlockEntity extends BlockEntity {
                 counts[i] -= amount;
                 if (counts[i] == 0) clearSlot(i);
                 setChanged();
+                syncLoadedState();
                 break;
             }
         }
@@ -170,17 +213,34 @@ public class SpoolRackBlockEntity extends BlockEntity {
             clearSlot(i);
         }
         setChanged();
+        syncLoadedState();
     }
 
     private void give(Player player, ItemStack stack) {
-        if (!player.getInventory().add(stack)) {
-            player.drop(stack, false);
-        }
+        PlayerInventoryUtil.giveDirect(player, stack);
     }
 
     private void clearSlot(int i) {
         itemIds[i] = null;
         counts[i] = 0;
+    }
+
+    /** True if the rack contains any stored items. */
+    public boolean hasContents() {
+        for (int i = 0; i < SLOTS; i++) {
+            if (counts[i] > 0) return true;
+        }
+        return false;
+    }
+
+    /** Mirrors inventory occupancy into the blockstate's loaded property. */
+    private void syncLoadedState() {
+        if (level == null || level.isClientSide) return;
+        BlockState state = getBlockState();
+        boolean loaded = hasContents();
+        if (state.hasProperty(SpoolRackBlock.LOADED) && state.getValue(SpoolRackBlock.LOADED) != loaded) {
+            level.setBlock(worldPosition, state.setValue(SpoolRackBlock.LOADED, loaded), 3);
+        }
     }
 
     /**

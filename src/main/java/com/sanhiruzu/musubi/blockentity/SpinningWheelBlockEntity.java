@@ -4,6 +4,9 @@ import com.sanhiruzu.musubi.block.SpinningWheelBlock;
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
 import com.sanhiruzu.musubi.item.MusubiItems;
+import com.sanhiruzu.musubi.rei.IReiStorage;
+import com.sanhiruzu.musubi.rei.ReiUtil;
+import com.sanhiruzu.musubi.rei.SimpleReiStorage;
 import com.sanhiruzu.musubi.sound.MusubiSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -14,7 +17,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -36,14 +38,20 @@ import java.util.List;
  */
 public class SpinningWheelBlockEntity extends BlockEntity {
 
-    private static final int TICKS_PER_EXTRACT = 20;
+    private static final int TICKS_PER_EXTRACT  = 20;
     private static final int RAW_TICKS_PER_ITEM = 40;
+    private static final int REI_CAPACITY       = 500;
+    private static final int REI_PER_THREAD     = 5;
+    private static final int DISTRIBUTE_EVERY   = 20;
 
     private ItemStack skein = ItemStack.EMPTY;
     private int tickTimer = TICKS_PER_EXTRACT;
 
     private ItemStack rawInput = ItemStack.EMPTY;
     private int rawTickTimer = RAW_TICKS_PER_ITEM;
+
+    private final SimpleReiStorage rei = new SimpleReiStorage(REI_CAPACITY);
+    private int distributeTimer = DISTRIBUTE_EVERY;
 
     public SpinningWheelBlockEntity(BlockPos pos, BlockState state) {
         super(MusubiBlockEntities.SPINNING_WHEEL.get(), pos, state);
@@ -58,15 +66,22 @@ public class SpinningWheelBlockEntity extends BlockEntity {
                 be.tickTimer = TICKS_PER_EXTRACT;
                 be.extractBatch(level, pos, state);
             }
-            return;
-        }
-
-        if (!be.rawInput.isEmpty()) {
+        } else if (!be.rawInput.isEmpty()) {
             be.rawTickTimer--;
             if (be.rawTickTimer <= 0) {
                 be.rawTickTimer = RAW_TICKS_PER_ITEM;
                 be.processRawSilk(level, pos, state);
             }
+        }
+
+        if (--be.distributeTimer <= 0) {
+            be.distributeTimer = DISTRIBUTE_EVERY;
+            ReiUtil.distribute(be.rei, level, pos);
+        }
+
+        if (be.rei.isDirty()) {
+            be.rei.clearDirty();
+            be.setChanged();
         }
     }
 
@@ -134,6 +149,7 @@ public class SpinningWheelBlockEntity extends BlockEntity {
     private void processRawSilk(Level level, BlockPos pos, BlockState state) {
         rawInput.shrink(1);
         ejectItem(level, pos, state, new ItemStack(MusubiItems.MAGICAL_SILK_THREAD.get(), 1));
+        rei.generate(REI_PER_THREAD);
         if (rawInput.isEmpty()) {
             rawInput = ItemStack.EMPTY;
             level.setBlock(pos, state.setValue(SpinningWheelBlock.SPINNING, false), 3);
@@ -200,6 +216,8 @@ public class SpinningWheelBlockEntity extends BlockEntity {
         return retrieved;
     }
 
+    public IReiStorage getReiStorage() { return rei; }
+
     public void dropSkein(Level level, BlockPos pos) {
         if (!skein.isEmpty()) {
             level.addFreshEntity(new ItemEntity(
@@ -226,6 +244,7 @@ public class SpinningWheelBlockEntity extends BlockEntity {
             tag.put("raw_input", rawInput.save(registries));
         }
         tag.putInt("raw_tick_timer", rawTickTimer);
+        tag.putInt("rei", rei.getRaw());
     }
 
     @Override
@@ -239,6 +258,7 @@ public class SpinningWheelBlockEntity extends BlockEntity {
             ? ItemStack.parseOptional(registries, tag.getCompound("raw_input"))
             : ItemStack.EMPTY;
         rawTickTimer = tag.contains("raw_tick_timer") ? tag.getInt("raw_tick_timer") : RAW_TICKS_PER_ITEM;
+        rei.setRaw(tag.getInt("rei"));
     }
 
     // ── Sync ─────────────────────────────────────────────────────────────────

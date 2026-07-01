@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "musubi:item/skein",
+    "layer1": "musubi:item/skein_shimmer"
+  }
+}

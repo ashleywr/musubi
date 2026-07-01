@@ -3,14 +3,20 @@ package com.sanhiruzu.musubi.item;
 import com.sanhiruzu.musubi.MusubiTags;
 import com.sanhiruzu.musubi.block.MusubiBlocks;
 import com.sanhiruzu.musubi.blockentity.ShinbokuBlockEntity;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+
+import java.util.List;
 
 /**
  * The Shimenawa (注連縄) — a sacred twisted rope strung with paper zigzags (shide).
@@ -26,6 +32,26 @@ public class ShimenawaItem extends Item {
 
     public ShimenawaItem(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        boolean showDetails = net.minecraft.client.gui.screens.Screen.hasShiftDown();
+        MusubiTooltip.addLine(tooltip, ChatFormatting.GOLD, "musubi.item.shimenawa.summary");
+        if (showDetails) {
+            MusubiTooltip.addJapaneseName(tooltip, "musubi.item.shimenawa.lore");
+            tooltip.add(MusubiTooltip.labelValue(Component.translatable("musubi.tooltip.use"),
+                ChatFormatting.GOLD, Component.translatable("musubi.item.shimenawa.use"),
+                ChatFormatting.GRAY));
+            tooltip.add(MusubiTooltip.labelValue(Component.translatable("musubi.tooltip.result"),
+                ChatFormatting.GOLD, Component.translatable("musubi.item.shimenawa.result"),
+                ChatFormatting.GRAY));
+            tooltip.add(MusubiTooltip.labelValue(Component.translatable("musubi.tooltip.effect"),
+                ChatFormatting.GOLD, Component.translatable("musubi.item.shimenawa.effect"),
+                ChatFormatting.GRAY));
+        } else {
+            MusubiTooltip.addShiftPrompt(tooltip);
+        }
     }
 
     @Override

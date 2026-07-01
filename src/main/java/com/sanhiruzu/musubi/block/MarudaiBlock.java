@@ -6,6 +6,7 @@ import com.sanhiruzu.musubi.blockentity.MusubiBlockEntities;
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
 import com.sanhiruzu.musubi.item.SkeinItem;
+import com.sanhiruzu.musubi.item.TamaItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -34,9 +35,9 @@ import javax.annotation.Nullable;
 /**
  * The marudai — a bobbin-winding stand that routes skein contents to nearby spool racks.
  *
- * Right-click with a skein → mounts it and begins winding.
+ * Right-click with a skein or a Tama → mounts it and begins winding.
  *   If no spool racks are within reach, the player gets an actionbar message and the
- *   skein stays in hand.
+ *   source stays put.
  *   If already winding, the new skein is rejected with a message.
  *
  * The WINDING block state property is true while a skein is being wound. Models and
@@ -98,7 +99,9 @@ public class MarudaiBlock extends BaseEntityBlock {
             ItemStack stack, BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hit) {
 
-        if (!(stack.getItem() instanceof SkeinItem)) {
+        boolean useSkein = stack.getItem() instanceof SkeinItem;
+        boolean useTama = stack.getItem() instanceof TamaItem;
+        if (!useSkein && !useTama) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
         if (level.isClientSide) return ItemInteractionResult.SUCCESS;
@@ -112,8 +115,18 @@ public class MarudaiBlock extends BaseEntityBlock {
             return ItemInteractionResult.FAIL;
         }
 
-        SkeinContents contents = stack.get(MusubiDataComponents.SKEIN_CONTENTS);
-        if (contents == null || contents.count() == 0) return ItemInteractionResult.FAIL;
+        SkeinContents contents;
+        if (useSkein) {
+            contents = stack.get(MusubiDataComponents.SKEIN_CONTENTS);
+            if (contents == null || contents.count() == 0) return ItemInteractionResult.FAIL;
+        } else {
+            contents = TamaItem.asSkeinContents(stack);
+            if (contents == null) {
+                player.displayClientMessage(
+                    Component.translatable("musubi.marudai.empty_tama"), true);
+                return ItemInteractionResult.FAIL;
+            }
+        }
 
         boolean mounted = be.mountSkein(contents);
         if (!mounted) {
@@ -122,7 +135,7 @@ public class MarudaiBlock extends BaseEntityBlock {
             return ItemInteractionResult.FAIL;
         }
 
-        stack.shrink(1);
+        if (useSkein) stack.shrink(1);
         level.setBlock(pos, state.setValue(WINDING, true), 3);
         return ItemInteractionResult.CONSUME;
     }
@@ -138,6 +151,11 @@ public class MarudaiBlock extends BaseEntityBlock {
                 if (partial != null) {
                     level.addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(
                         level, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, partial));
+                }
+                ItemStack output = be.takePendingOutput();
+                if (!output.isEmpty()) {
+                    level.addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(
+                        level, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, output));
                 }
             }
         }

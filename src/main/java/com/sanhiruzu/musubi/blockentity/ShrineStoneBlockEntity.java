@@ -35,6 +35,7 @@ public class ShrineStoneBlockEntity extends BlockEntity {
     private final SimpleReiStorage rei = new SimpleReiStorage(CAPACITY);
     private int distributeTimer = DISTRIBUTE_EVERY;
     private int blessedTimer    = 0;
+    private int rackBonus       = 0;
 
     public ShrineStoneBlockEntity(BlockPos pos, BlockState state) {
         super(MusubiBlockEntities.SHRINE_STONE.get(), pos, state);
@@ -46,8 +47,8 @@ public class ShrineStoneBlockEntity extends BlockEntity {
 
         // Generate REI each tick; blessed doubles the base rate.
         int base  = be.blessedTimer > 0 ? BASE_RATE * 2 : BASE_RATE;
-        int bonus = Math.min(MAX_BONUS, countNearbyRacks(level, pos) * BONUS_RATE);
-        be.rei.generate(base + bonus);
+        be.rackBonus = Math.min(MAX_BONUS, countNearbyRacks(level, pos) * BONUS_RATE);
+        be.rei.generate(base + be.rackBonus);
 
         // Distribute to neighbors once per second.
         be.distributeTimer--;
@@ -83,7 +84,9 @@ public class ShrineStoneBlockEntity extends BlockEntity {
         setChanged();
     }
 
-    public boolean isBlessed() { return blessedTimer > 0; }
+    public boolean isBlessed()      { return blessedTimer > 0; }
+    public int getBlessedTimer()    { return blessedTimer; }
+    public int getRackBonus()       { return rackBonus; }
     public IReiStorage getReiStorage() { return rei; }
     public int getREI()    { return rei.getREI(); }
     public int getMaxREI() { return rei.getMaxREI(); }

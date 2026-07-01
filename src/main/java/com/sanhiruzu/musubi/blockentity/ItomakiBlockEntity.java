@@ -4,6 +4,7 @@ import com.sanhiruzu.musubi.block.ItomakiBlock;
 import com.sanhiruzu.musubi.component.MusubiDataComponents;
 import com.sanhiruzu.musubi.component.SkeinContents;
 import com.sanhiruzu.musubi.component.TamaStorage;
+import com.sanhiruzu.musubi.item.TamaItem;
 import com.sanhiruzu.musubi.sound.MusubiSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -131,6 +132,16 @@ public class ItomakiBlockEntity extends BlockEntity {
         stack.shrink(1);
         setChanged();
         return true;
+    }
+
+    /**
+     * Pushes matching items from {@code stack} back into the loaded Tama.
+     * Returns how many items were accepted.
+     */
+    public int depositIntoTama(ItemStack stack) {
+        int deposited = TamaItem.depositFromStack(tama, stack);
+        if (deposited > 0) setChanged();
+        return deposited;
     }
 
     /** Removes and returns the Tama (empty if none). */

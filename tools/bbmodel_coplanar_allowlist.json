@@ -1,0 +1,28 @@
+{
+  "spool_rack.bbmodel": [
+    { "a": "bottom_rail", "b": "left_stile", "axis": 1 },
+    { "a": "bottom_rail", "b": "right_stile", "axis": 1 },
+    { "a": "left_stile", "b": "top_rail_back", "axis": 0 },
+    { "a": "right_stile", "b": "top_rail_back", "axis": 0 }
+  ],
+  "spinning_wheel.bbmodel": [
+    { "a": "rim_bottom", "b": "foot_left", "axis": 0 },
+    { "a": "rim_bottom", "b": "foot_right", "axis": 0 },
+    { "a": "bobbin", "b": "treadle", "axis": 1 }
+  ],
+  "marudai.bbmodel": [
+    { "a": "disc_n1", "b": "bob_n", "axis": 1 },
+    { "a": "disc_n2", "b": "bob_n", "axis": 1 },
+    { "a": "disc_n3", "b": "ped_w", "axis": 1 },
+    { "a": "disc_n3", "b": "ped_e", "axis": 1 },
+    { "a": "disc_s3", "b": "ped_w", "axis": 1 },
+    { "a": "disc_s3", "b": "ped_e", "axis": 1 },
+    { "a": "disc_s2", "b": "bob_s", "axis": 1 },
+    { "a": "disc_s1", "b": "bob_s", "axis": 1 },
+    { "a": "disc_w", "b": "bob_w", "axis": 1 },
+    { "a": "disc_e", "b": "bob_e", "axis": 1 }
+  ],
+  "tama.bbmodel": [
+    { "a": "flange_top", "b": "shaft", "axis": 1 }
+  ]
+}

@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import com.sanhiruzu.musubi.blockentity.MusubiBlockEntities;
 import com.sanhiruzu.musubi.blockentity.SpinningWheelBlockEntity;
 import com.sanhiruzu.musubi.item.MusubiItems;
+import com.sanhiruzu.musubi.util.PlayerInventoryUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
@@ -128,13 +129,13 @@ public class SpinningWheelBlock extends BaseEntityBlock {
 
         if (!be.getSkein().isEmpty()) {
             ItemStack retrieved = be.retrieveSkein(level, pos, state);
-            if (!player.getInventory().add(retrieved)) player.drop(retrieved, false);
+            PlayerInventoryUtil.giveDirect(player, retrieved);
             return InteractionResult.SUCCESS;
         }
 
         if (!be.getRawInput().isEmpty()) {
             ItemStack retrieved = be.retrieveRawInput(level, pos, state);
-            if (!player.getInventory().add(retrieved)) player.drop(retrieved, false);
+            PlayerInventoryUtil.giveDirect(player, retrieved);
             return InteractionResult.SUCCESS;
         }
 

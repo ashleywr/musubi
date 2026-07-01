@@ -1,8 +1,10 @@
 package com.sanhiruzu.musubi.item;
 
 import com.sanhiruzu.musubi.blockentity.ShrineStoneBlockEntity;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -12,7 +14,10 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+
+import java.util.List;
 
 /**
  * The Gohei (御幣) — a ritual wand with folded paper streamers used in Shinto
@@ -28,6 +33,26 @@ public class GoheiItem extends Item {
 
     public GoheiItem(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        boolean showDetails = net.minecraft.client.gui.screens.Screen.hasShiftDown();
+        MusubiTooltip.addLine(tooltip, ChatFormatting.GOLD, "musubi.item.gohei.summary");
+        if (showDetails) {
+            MusubiTooltip.addJapaneseName(tooltip, "musubi.item.gohei.lore");
+            tooltip.add(MusubiTooltip.labelValue(Component.translatable("musubi.tooltip.use"),
+                ChatFormatting.GOLD, Component.translatable("musubi.item.gohei.use"),
+                ChatFormatting.GRAY));
+            tooltip.add(MusubiTooltip.labelValue(Component.translatable("musubi.tooltip.effect"),
+                ChatFormatting.GOLD, Component.translatable("musubi.item.gohei.effect"),
+                ChatFormatting.GRAY));
+            tooltip.add(MusubiTooltip.labelValue(Component.translatable("musubi.tooltip.durability"),
+                ChatFormatting.GOLD, Component.translatable("musubi.item.gohei.durability"),
+                ChatFormatting.GRAY));
+        } else {
+            MusubiTooltip.addShiftPrompt(tooltip);
+        }
     }
 
     @Override

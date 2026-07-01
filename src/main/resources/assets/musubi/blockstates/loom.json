@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,weaving=false": { "model": "musubi:block/loom" },
+    "facing=south,weaving=false": { "model": "musubi:block/loom", "y": 180 },
+    "facing=east,weaving=false":  { "model": "musubi:block/loom", "y": 90 },
+    "facing=west,weaving=false":  { "model": "musubi:block/loom", "y": 270 },
+    "facing=north,weaving=true":  { "model": "musubi:block/loom_weaving" },
+    "facing=south,weaving=true":  { "model": "musubi:block/loom_weaving", "y": 180 },
+    "facing=east,weaving=true":   { "model": "musubi:block/loom_weaving", "y": 90 },
+    "facing=west,weaving=true":   { "model": "musubi:block/loom_weaving", "y": 270 }
+  }
+}

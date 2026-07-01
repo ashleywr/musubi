@@ -13,6 +13,10 @@ group = mod_group_id
 
 sourceSets.main.resources {
     srcDir('src/generated/resources')
+    // Blockbench support files live under assets/minecraft for editor convenience,
+    // but they must not be packaged or loaded by the game runtime.
+    exclude("assets/minecraft/**")
+    exclude("assets/assets/**")
     exclude("**/*.bbmodel")
     exclude("src/generated/**/.cache")
 }
@@ -142,6 +146,28 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.named('compileJava').configure {
     options.compilerArgs.addAll(['-Xlint:deprecation', '-Xlint:removal', '-Werror'])
+}
+
+tasks.register('checkBbmodels', Exec) {
+    group = 'verification'
+    description = 'Scans Blockbench .bbmodel files for suspicious coplanar faces.'
+    workingDir = projectDir
+    commandLine 'python', 'tools/check_bbmodel_coplanar_faces.py'
+}
+
+tasks.register('checkBbmodelsSeams', Exec) {
+    group = 'verification'
+    description = 'Scans Blockbench .bbmodel files for all shared-plane seams.'
+    workingDir = projectDir
+    commandLine 'python', 'tools/check_bbmodel_coplanar_faces.py', '--seams'
+    ignoreExitValue = true
+}
+
+tasks.register('syncBbmodelSupportAssets', Exec) {
+    group = 'maintenance'
+    description = 'Syncs vanilla Blockbench support parents and textures into the workspace.'
+    workingDir = projectDir
+    commandLine 'python', 'tools/sync_blockbench_support_assets.py'
 }
 
 idea {

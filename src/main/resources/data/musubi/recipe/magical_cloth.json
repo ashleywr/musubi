@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "musubi:magical_silk_thread" },
+    { "item": "musubi:magical_silk_thread" }
+  ],
+  "result": {
+    "id": "musubi:magical_cloth",
+    "count": 1
+  }
+}

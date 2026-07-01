@@ -1,5 +1,5 @@
 {
-  "__comment": "Shared 3D geometry for all tama tiers — a weighted kumihimo bobbin. Tier models set #tex. Open tama.bbmodel to edit.",
+  "__comment": "Shared 3D geometry for all tama tiers — a weighted kumihimo bobbin. Tier models set #tex. Open this JSON to edit; use tama.bbmodel only as a Blockbench mirror.",
   "parent": "minecraft:block/block",
   "textures": {
     "tex": "musubi:item/bone_tama",

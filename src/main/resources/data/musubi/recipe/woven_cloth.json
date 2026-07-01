@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "musubi:silk_thread" },
+    { "item": "musubi:silk_thread" },
+    { "item": "musubi:silk_thread" },
+    { "item": "musubi:silk_thread" }
+  ],
+  "result": {
+    "id": "musubi:woven_cloth",
+    "count": 1
+  }
+}

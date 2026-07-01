@@ -46,4 +46,9 @@ public class MusubiBlockEntities {
         BLOCK_ENTITIES.register("shinboku", () -> BlockEntityType.Builder
             .of(ShinbokuBlockEntity::new, MusubiBlocks.SHINBOKU.get())
             .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LoomBlockEntity>> LOOM =
+        BLOCK_ENTITIES.register("loom", () -> BlockEntityType.Builder
+            .of(LoomBlockEntity::new, MusubiBlocks.LOOM.get())
+            .build(null));
 }

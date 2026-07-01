@@ -1,6 +1,45 @@
 {
-  "parent": "minecraft:item/handheld",
+  "__comment": "Intentional 3D ceremonial item. The gohei is a held shrine object, not a flat material icon.",
+  "gui_light": "side",
+  "display": {
+    "gui": { "rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.7, 0.7, 0.7] },
+    "ground": { "rotation": [0, 0, 0], "translation": [0, 3, 0], "scale": [0.35, 0.35, 0.35] },
+    "fixed": { "rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.55, 0.55, 0.55] },
+    "thirdperson_righthand": { "rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.45, 0.45, 0.45] },
+    "thirdperson_lefthand": { "rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.45, 0.45, 0.45] },
+    "firstperson_righthand": { "rotation": [0, 45, 0], "translation": [0, 0, 0], "scale": [0.5, 0.5, 0.5] },
+    "firstperson_lefthand": { "rotation": [0, 45, 0], "translation": [0, 0, 0], "scale": [0.5, 0.5, 0.5] }
+  },
   "textures": {
-    "layer0": "musubi:item/gohei"
-  }
+    "tex": "musubi:item/gohei",
+    "particle": "musubi:item/gohei"
+  },
+  "elements": [
+    {
+      "name": "staff",
+      "from": [7.25, 1.0, 7.25],
+      "to": [8.75, 12.5, 8.75],
+      "faces": {
+        "north": { "uv": [6, 0, 10, 16], "texture": "#tex" },
+        "south": { "uv": [6, 0, 10, 16], "texture": "#tex" },
+        "east": { "uv": [6, 0, 10, 16], "texture": "#tex" },
+        "west": { "uv": [6, 0, 10, 16], "texture": "#tex" },
+        "up": { "uv": [7, 7, 9, 9], "texture": "#tex" },
+        "down": { "uv": [7, 7, 9, 9], "texture": "#tex" }
+      }
+    },
+    {
+      "name": "streamers",
+      "from": [4.0, 10.5, 5.5],
+      "to": [12.0, 14.5, 10.5],
+      "faces": {
+        "north": { "uv": [0, 0, 16, 8], "texture": "#tex" },
+        "south": { "uv": [0, 0, 16, 8], "texture": "#tex" },
+        "east": { "uv": [0, 0, 5, 4], "texture": "#tex" },
+        "west": { "uv": [0, 0, 5, 4], "texture": "#tex" },
+        "up": { "uv": [0, 0, 16, 5], "texture": "#tex" },
+        "down": { "uv": [0, 0, 16, 5], "texture": "#tex" }
+      }
+    }
+  ]
 }

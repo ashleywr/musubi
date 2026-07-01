@@ -5,9 +5,12 @@ import com.sanhiruzu.musubi.rei.IReiStorage;
 import com.sanhiruzu.musubi.rei.ReiUtil;
 import com.sanhiruzu.musubi.rei.SimpleReiStorage;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderGetter;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -18,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -27,31 +31,27 @@ import java.util.Optional;
 /**
  * A Shinboku (神木) acts as a sponge for ambient natural REI.
  *
- * The amount absorbed per tick depends on:
- *  - The wrapped block's spiritual resonance (log, stone, or crystal).
- *  - The density of naturally-occurring blocks in the surrounding 8-block radius,
- *    sampled every 10 seconds. An untouched forest or cave earns a large bonus;
- *    a cleared quarry earns nothing.
+ * REI rate = baseRate + naturalBonus (sampled every 10 s from an 8-block radius).
+ *   base:  amethyst/crystal = 10,  stone variants = 6,  log = 4,  other = 2
+ *   bonus: +1 per 50 "natural" blocks (logs, leaves, flowers, dirt, sand, stone…), capped at +10
  *
- * REI rate = baseRate + naturalBonus
- *   base:  log = 4, stone = 6, amethyst/crystal = 10, other = 2
- *   bonus: +1 per 50 "natural" blocks within 8 blocks, capped at +10
- *
- * Total maximum: 20 REI/t (amethyst in pristine nature).
+ * The full wrapped BlockState (including orientation) is stored so the BER can
+ * reproduce the exact appearance of the original block.
  */
 public class ShinbokuBlockEntity extends BlockEntity {
 
-    public static final int CAPACITY       = 2000;
-    public static final int SCAN_RANGE     = 8;
-    public static final int SCAN_EVERY     = 200; // 10 seconds
+    public static final int CAPACITY        = 2000;
+    public static final int SCAN_RANGE      = 8;
+    public static final int SCAN_EVERY      = 200;
     public static final int DISTRIBUTE_EVERY = 20;
 
     private final SimpleReiStorage rei = new SimpleReiStorage(CAPACITY);
 
+    @Nullable private BlockState wrappedState  = null;
     @Nullable private ResourceLocation wrappedBlockId = null;
-    private int baseRate     = 2;
-    private int naturalBonus = 0;
-    private int scanTimer     = SCAN_EVERY;
+    private int baseRate      = 2;
+    private int naturalBonus  = 0;
+    private int scanTimer      = SCAN_EVERY;
     private int distributeTimer = DISTRIBUTE_EVERY;
 
     public ShinbokuBlockEntity(BlockPos pos, BlockState state) {
@@ -59,17 +59,14 @@ public class ShinbokuBlockEntity extends BlockEntity {
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, ShinbokuBlockEntity be) {
-        // Periodic chunk-richness scan.
         be.scanTimer--;
         if (be.scanTimer <= 0) {
-            be.scanTimer     = SCAN_EVERY;
-            be.naturalBonus  = scanNaturalRichness(level, pos);
+            be.scanTimer    = SCAN_EVERY;
+            be.naturalBonus = scanNaturalRichness(level, pos);
         }
 
-        // Absorb REI from surrounding nature each tick.
         be.rei.generate(be.baseRate + be.naturalBonus);
 
-        // Distribute to adjacent blocks every second.
         be.distributeTimer--;
         if (be.distributeTimer <= 0) {
             be.distributeTimer = DISTRIBUTE_EVERY;
@@ -82,8 +79,6 @@ public class ShinbokuBlockEntity extends BlockEntity {
         }
     }
 
-    /** Scans for naturally-occurring blocks in the surrounding radius.
-     *  Returns a bonus REI/t value (0–10). */
     private static int scanNaturalRichness(Level level, BlockPos origin) {
         int count = 0;
         for (BlockPos p : BlockPos.betweenClosed(
@@ -106,38 +101,40 @@ public class ShinbokuBlockEntity extends BlockEntity {
     // ── Wrapped-block management ───────────────────────────────────────────────
 
     public void setWrappedBlock(BlockState state) {
+        wrappedState   = state;
         wrappedBlockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         baseRate       = computeBaseRate(state);
         setChanged();
+        if (level != null) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
     }
 
-    @Nullable
-    public ResourceLocation getWrappedBlockId() { return wrappedBlockId; }
+    @Nullable public BlockState getWrappedState()      { return wrappedState; }
+    @Nullable public ResourceLocation getWrappedBlockId() { return wrappedBlockId; }
 
     private static int computeBaseRate(BlockState state) {
         if (state.is(BlockTags.CRYSTAL_SOUND_BLOCKS)) return 10;
-        if (state.is(BlockTags.LOGS))                 return 4;
         if (state.is(BlockTags.STONE_ORE_REPLACEABLES)) return 6;
+        if (state.is(BlockTags.LOGS))                   return 4;
         return 2;
     }
 
-    /** Called by ShinbokuBlock.onRemove — drops the wrapped item and the Shimenawa. */
+    /** Drops the original block's item and the Shimenawa rope on removal. */
     public void dropContents(Level level, BlockPos pos) {
         if (wrappedBlockId != null) {
             Optional<Block> block = BuiltInRegistries.BLOCK.getOptional(wrappedBlockId);
             block.ifPresent(b -> {
                 Item item = b.asItem();
-                if (item != Items.AIR) {
-                    Block.popResource(level, pos, new ItemStack(item));
-                }
+                if (item != Items.AIR) Block.popResource(level, pos, new ItemStack(item));
             });
         }
         Block.popResource(level, pos, new ItemStack(MusubiItems.SHIMENAWA.get()));
     }
 
-    public IReiStorage getReiStorage() { return rei; }
-    public int getBaseRate()    { return baseRate; }
-    public int getNaturalBonus(){ return naturalBonus; }
+    public IReiStorage getReiStorage()  { return rei; }
+    public int getBaseRate()            { return baseRate; }
+    public int getNaturalBonus()        { return naturalBonus; }
 
     // ── Persistence ───────────────────────────────────────────────────────────
 
@@ -145,8 +142,9 @@ public class ShinbokuBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt("rei", rei.getRaw());
-        if (wrappedBlockId != null) tag.putString("wrapped_block", wrappedBlockId.toString());
-        tag.putInt("base_rate",    baseRate);
+        if (wrappedState != null) {
+            tag.put("wrapped_state", NbtUtils.writeBlockState(wrappedState));
+        }
         tag.putInt("natural_bonus", naturalBonus);
     }
 
@@ -154,11 +152,14 @@ public class ShinbokuBlockEntity extends BlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         rei.setRaw(tag.getInt("rei"));
-        if (tag.contains("wrapped_block")) {
-            wrappedBlockId = ResourceLocation.parse(tag.getString("wrapped_block"));
-            // Recompute base rate from the stored block's default state.
-            BuiltInRegistries.BLOCK.getOptional(wrappedBlockId)
-                .ifPresent(b -> baseRate = computeBaseRate(b.defaultBlockState()));
+        if (tag.contains("wrapped_state")) {
+            HolderGetter<Block> blockGetter = registries.lookupOrThrow(Registries.BLOCK);
+            wrappedState   = NbtUtils.readBlockState(blockGetter, tag.getCompound("wrapped_state"));
+            if (wrappedState.is(Blocks.AIR)) wrappedState = null;
+            if (wrappedState != null) {
+                wrappedBlockId = BuiltInRegistries.BLOCK.getKey(wrappedState.getBlock());
+                baseRate       = computeBaseRate(wrappedState);
+            }
         }
         naturalBonus = tag.getInt("natural_bonus");
     }

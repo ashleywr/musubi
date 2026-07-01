@@ -1,6 +1,7 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "musubi:block/shinboku"
+    "all": "musubi:block/shrine_stone",
+    "particle": "musubi:block/shrine_stone"
   }
 }

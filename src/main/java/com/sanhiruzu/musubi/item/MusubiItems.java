@@ -33,11 +33,28 @@ public class MusubiItems {
     public static final DeferredHolder<Item, FiberBundleItem> FIBER_BUNDLE =
         ITEMS.register("fiber_bundle", () -> new FiberBundleItem(new Item.Properties().stacksTo(64)));
 
-    public static final DeferredHolder<Item, Item> SILK_THREAD =
-        ITEMS.register("silk_thread", () -> new Item(new Item.Properties().stacksTo(64)));
+    public static final DeferredHolder<Item, MusubiFlavorItem> SILK_THREAD =
+        ITEMS.register("silk_thread", () -> new MusubiFlavorItem(MusubiFlavorItem.Flavor.SILK_THREAD,
+            new Item.Properties().stacksTo(64)));
 
     public static final DeferredHolder<Item, MagicalSilkThreadItem> MAGICAL_SILK_THREAD =
         ITEMS.register("magical_silk_thread", () -> new MagicalSilkThreadItem(new Item.Properties().stacksTo(64)));
+
+    public static final DeferredHolder<Item, TamaAugmentItem> TAMA_EMBER_THREAD =
+        ITEMS.register("tama_ember_thread", () -> new TamaAugmentItem(TamaAugmentItem.Kind.EMBER_THREAD,
+            new Item.Properties().stacksTo(16)));
+
+    public static final DeferredHolder<Item, TamaAugmentItem> TAMA_REACHING_THREAD =
+        ITEMS.register("tama_reaching_thread", () -> new TamaAugmentItem(TamaAugmentItem.Kind.REACHING_THREAD,
+            new Item.Properties().stacksTo(16)));
+
+    public static final DeferredHolder<Item, TamaAugmentItem> TAMA_HOLLOW_THREAD =
+        ITEMS.register("tama_hollow_thread", () -> new TamaAugmentItem(TamaAugmentItem.Kind.HOLLOW_THREAD,
+            new Item.Properties().stacksTo(16)));
+
+    public static final DeferredHolder<Item, TamaAugmentItem> TAMA_SPIRIT_THREAD =
+        ITEMS.register("tama_spirit_thread", () -> new TamaAugmentItem(TamaAugmentItem.Kind.SPIRIT_THREAD,
+            new Item.Properties().stacksTo(16)));
 
     public static final DeferredHolder<Item, GoheiItem> GOHEI =
         ITEMS.register("gohei", () -> new GoheiItem(new Item.Properties().durability(20)));
@@ -48,6 +65,19 @@ public class MusubiItems {
     public static final DeferredHolder<Item, SilkwormItem> SILKWORM =
         ITEMS.register("silkworm", () -> new SilkwormItem(new Item.Properties().stacksTo(16)));
 
-    public static final DeferredHolder<Item, Item> SILKWORM_COCOON =
-        ITEMS.register("silkworm_cocoon", () -> new Item(new Item.Properties().stacksTo(64)));
+    public static final DeferredHolder<Item, MusubiFlavorItem> SILKWORM_COCOON =
+        ITEMS.register("silkworm_cocoon", () -> new MusubiFlavorItem(MusubiFlavorItem.Flavor.SILKWORM_COCOON,
+            new Item.Properties().stacksTo(64)));
+
+    public static final DeferredHolder<Item, MusubiFlavorItem> WOVEN_CLOTH =
+        ITEMS.register("woven_cloth", () -> new MusubiFlavorItem(MusubiFlavorItem.Flavor.WOVEN_CLOTH,
+            new Item.Properties().stacksTo(64)));
+
+    public static final DeferredHolder<Item, MusubiFlavorItem> MAGICAL_CLOTH =
+        ITEMS.register("magical_cloth", () -> new MusubiFlavorItem(MusubiFlavorItem.Flavor.MAGICAL_CLOTH,
+            new Item.Properties().stacksTo(64)));
+
+    // Weaving pattern (織図) — encodes a recipe for the loom autocrafter to repeat.
+    public static final DeferredHolder<Item, WeavingPatternItem> WEAVING_PATTERN =
+        ITEMS.register("weaving_pattern", () -> new WeavingPatternItem(new Item.Properties().stacksTo(16)));
 }

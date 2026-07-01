@@ -19,6 +19,10 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -26,7 +30,9 @@ import net.neoforged.neoforge.items.IItemHandler;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -52,6 +58,8 @@ public class MarudaiBlockEntity extends BlockEntity {
     @Nullable private SkeinContents mountedSkein;
     /** Remaining variants to wind, drained as items are deposited. */
     private final List<SkeinContents.VariantEntry> pendingVariants = new ArrayList<>();
+    /** Output item reserved for a Tama upgrade recipe, if one matched when winding began. */
+    private ItemStack pendingOutput = ItemStack.EMPTY;
     /** Cached rack positions discovered when winding began. */
     private final List<BlockPos> targetRacks = new ArrayList<>();
     /** Countdown to the next wind operation. */
@@ -142,6 +150,7 @@ public class MarudaiBlockEntity extends BlockEntity {
         pendingVariants.addAll(contents.variants());
         targetRacks.clear();
         targetRacks.addAll(racks);
+        pendingOutput = resolveUpgradeOutput(racks);
         tickTimer = 0;
         setChanged();
         return true;
@@ -168,7 +177,15 @@ public class MarudaiBlockEntity extends BlockEntity {
         stack.set(MusubiDataComponents.SKEIN_CONTENTS, partial);
         mountedSkein = null;
         pendingVariants.clear();
+        pendingOutput = ItemStack.EMPTY;
         return stack;
+    }
+
+    /** Returns any reserved augment output, or empty if no recipe is active. */
+    public ItemStack takePendingOutput() {
+        ItemStack out = pendingOutput;
+        pendingOutput = ItemStack.EMPTY;
+        return out;
     }
 
     // ── Tick ──────────────────────────────────────────────────────────────────
@@ -241,6 +258,11 @@ public class MarudaiBlockEntity extends BlockEntity {
         mountedSkein = null;
         pendingVariants.clear();
         targetRacks.clear();
+        if (pendingOutput != null && !pendingOutput.isEmpty()) {
+            level.addFreshEntity(new ItemEntity(
+                level, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, pendingOutput));
+        }
+        pendingOutput = ItemStack.EMPTY;
         setChanged();
         // Clear WINDING flag on the block state.
         if (state.getBlock() instanceof MarudaiBlock && state.getValue(MarudaiBlock.WINDING)) {
@@ -269,6 +291,87 @@ public class MarudaiBlockEntity extends BlockEntity {
             }
         }
         return remaining;
+    }
+
+    /**
+     * If the mounted skein can be braided into a Tama augment, reserve the rack ingredients and
+     * return the output item. Otherwise returns empty.
+     */
+    private ItemStack resolveUpgradeOutput(List<BlockPos> racks) {
+        if (level == null) return ItemStack.EMPTY;
+
+        for (RecipeHolder<CraftingRecipe> holder : level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING)) {
+            ItemStack result = holder.value().getResultItem(level.registryAccess());
+            if (!isTamaAugment(result)) continue;
+
+            Map<ResourceLocation, Integer> available = new LinkedHashMap<>();
+            for (BlockPos rackPos : racks) {
+                if (!(level.getBlockEntity(rackPos) instanceof SpoolRackBlockEntity rack)) continue;
+                for (int slot = 0; slot < SpoolRackBlockEntity.SLOTS; slot++) {
+                    ResourceLocation id = rack.getSlotItem(slot);
+                    int count = rack.getSlotCount(slot);
+                    if (id != null && count > 0) {
+                        available.merge(id, count, Integer::sum);
+                    }
+                }
+            }
+
+            boolean foundSkein = false;
+            Map<ResourceLocation, Integer> toExtract = new LinkedHashMap<>();
+            List<Ingredient> ingredients = holder.value().getIngredients();
+            for (Ingredient ing : ingredients) {
+                if (ing.isEmpty()) continue;
+                if (!foundSkein && ing.test(new ItemStack(MusubiItems.SKEIN.get()))) {
+                    foundSkein = true;
+                    continue;
+                }
+
+                ResourceLocation matched = null;
+                for (Map.Entry<ResourceLocation, Integer> entry : available.entrySet()) {
+                    if (entry.getValue() <= 0) continue;
+                    ItemStack sample = BuiltInRegistries.ITEM.getOptional(entry.getKey())
+                        .map(item -> new ItemStack(item, 1))
+                        .orElse(ItemStack.EMPTY);
+                    if (!sample.isEmpty() && ing.test(sample)) {
+                        matched = entry.getKey();
+                        break;
+                    }
+                }
+                if (matched == null) {
+                    toExtract.clear();
+                    foundSkein = false;
+                    break;
+                }
+                available.merge(matched, -1, Integer::sum);
+                toExtract.merge(matched, 1, Integer::sum);
+            }
+
+            if (!foundSkein || toExtract.isEmpty()) continue;
+
+            for (Map.Entry<ResourceLocation, Integer> entry : toExtract.entrySet()) {
+                int remaining = entry.getValue();
+                for (BlockPos rackPos : racks) {
+                    if (remaining <= 0) break;
+                    if (!(level.getBlockEntity(rackPos) instanceof SpoolRackBlockEntity rack)) continue;
+                    remaining -= rack.tryExtract(entry.getKey(), remaining);
+                }
+                if (remaining > 0) {
+                    // Another block changed state between planning and commit.
+                    return ItemStack.EMPTY;
+                }
+            }
+
+            return result.copyWithCount(1);
+        }
+
+        return ItemStack.EMPTY;
+    }
+
+    private static boolean isTamaAugment(ItemStack stack) {
+        return stack.is(MusubiItems.TAMA_EMBER_THREAD.get())
+            || stack.is(MusubiItems.TAMA_REACHING_THREAD.get())
+            || stack.is(MusubiItems.TAMA_HOLLOW_THREAD.get())
+            || stack.is(MusubiItems.TAMA_SPIRIT_THREAD.get());
     }
 
     /** Returns true if any rack within range can accept at least one of the given item type. */
@@ -317,6 +420,9 @@ public class MarudaiBlockEntity extends BlockEntity {
         tag.putString("group_key", mountedSkein.groupKey());
         tag.putInt("display_color", mountedSkein.displayColor());
         tag.putInt("complexity_score", mountedSkein.complexityScore());
+        if (!pendingOutput.isEmpty()) {
+            tag.put("pending_output", pendingOutput.save(registries));
+        }
 
         ListTag variants = new ListTag();
         for (SkeinContents.VariantEntry v : pendingVariants) {
@@ -334,6 +440,9 @@ public class MarudaiBlockEntity extends BlockEntity {
         mountedSkein = null;
         pendingVariants.clear();
         targetRacks.clear();
+        pendingOutput = tag.contains("pending_output")
+            ? ItemStack.parseOptional(registries, tag.getCompound("pending_output"))
+            : ItemStack.EMPTY;
 
         if (!tag.getBoolean("winding")) return;
 

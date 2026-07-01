@@ -58,8 +58,9 @@ public class ShinbokuBlock extends BaseEntityBlock {
         super.onRemove(state, level, pos, newState, isMoving);
     }
 
+    /** Tell the engine not to render the placeholder block model — the BER renders everything. */
     @Override
     protected RenderShape getRenderShape(BlockState state) {
-        return RenderShape.MODEL;
+        return RenderShape.ENTITYBLOCK_ANIMATED;
     }
 }

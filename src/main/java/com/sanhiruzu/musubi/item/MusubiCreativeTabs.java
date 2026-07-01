@@ -19,11 +19,18 @@ public class MusubiCreativeTabs {
             .title(Component.translatable("itemGroup.musubi.main"))
             .icon(() -> new ItemStack(MusubiItems.SILK_THREAD.get()))
             .displayItems((params, output) -> {
-                // Silkworm chain
+                // Silkworm chain and woven goods
                 output.accept(MusubiItems.SILKWORM.get());
                 output.accept(MusubiItems.SILKWORM_COCOON.get());
                 output.accept(MusubiItems.SILK_THREAD.get());
                 output.accept(MusubiItems.MAGICAL_SILK_THREAD.get());
+                output.accept(MusubiItems.TAMA_EMBER_THREAD.get());
+                output.accept(MusubiItems.TAMA_REACHING_THREAD.get());
+                output.accept(MusubiItems.TAMA_HOLLOW_THREAD.get());
+                output.accept(MusubiItems.TAMA_SPIRIT_THREAD.get());
+                output.accept(MusubiItems.WOVEN_CLOTH.get());
+                output.accept(MusubiItems.MAGICAL_CLOTH.get());
+                output.accept(MusubiItems.WEAVING_PATTERN.get());
 
                 // Winding tools (tama)
                 output.accept(MusubiItems.BONE_TAMA.get());
@@ -42,6 +49,7 @@ public class MusubiCreativeTabs {
                 output.accept(MusubiBlocks.SHRINE_STONE.get());
                 output.accept(MusubiBlocks.ITOMAKI.get());
                 output.accept(MusubiBlocks.DONATION_BOX.get());
+                output.accept(MusubiBlocks.LOOM.get());
                 output.accept(MusubiItems.GOHEI.get());
                 output.accept(MusubiItems.SHIMENAWA.get());
             })

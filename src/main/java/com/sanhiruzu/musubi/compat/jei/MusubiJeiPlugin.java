@@ -4,6 +4,7 @@ import com.sanhiruzu.musubi.block.MusubiBlocks;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.helpers.IGuiHelper;
+import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
@@ -45,5 +46,9 @@ public class MusubiJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(
             MusubiBlocks.SPINNING_WHEEL.get().asItem().getDefaultInstance(),
             SpinningWheelSpinningCategory.RECIPE_TYPE);
+        // The loom automates any crafting recipe — show it as a catalyst there.
+        registration.addRecipeCatalyst(
+            MusubiBlocks.LOOM.get().asItem().getDefaultInstance(),
+            RecipeTypes.CRAFTING);
     }
 }
