@@ -1,12 +1,8 @@
 {
   "variants": {
-    "facing=north,spooling=false": { "model": "musubi:block/itomaki" },
-    "facing=south,spooling=false": { "model": "musubi:block/itomaki", "y": 180 },
-    "facing=east,spooling=false":  { "model": "musubi:block/itomaki", "y": 90  },
-    "facing=west,spooling=false":  { "model": "musubi:block/itomaki", "y": 270 },
-    "facing=north,spooling=true":  { "model": "musubi:block/itomaki_spooling" },
-    "facing=south,spooling=true":  { "model": "musubi:block/itomaki_spooling", "y": 180 },
-    "facing=east,spooling=true":   { "model": "musubi:block/itomaki_spooling", "y": 90  },
-    "facing=west,spooling=true":   { "model": "musubi:block/itomaki_spooling", "y": 270 }
+    "facing=north": { "model": "musubi:block/itomaki" },
+    "facing=south": { "model": "musubi:block/itomaki", "y": 180 },
+    "facing=east":  { "model": "musubi:block/itomaki", "y": 90 },
+    "facing=west":  { "model": "musubi:block/itomaki", "y": 270 }
   }
 }

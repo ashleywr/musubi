@@ -6,9 +6,12 @@ import com.sanhiruzu.musubi.component.SkeinContents;
 import com.sanhiruzu.musubi.curio.MusubiCurios;
 import com.sanhiruzu.musubi.item.MusubiItems;
 import com.sanhiruzu.musubi.client.render.TamaCollectionVfx;
+import com.sanhiruzu.musubi.client.render.CometVfx;
 import com.sanhiruzu.musubi.client.render.ItomakiUnspoolVfx;
 import com.sanhiruzu.musubi.client.render.MoonReflectionVfx;
+import com.sanhiruzu.musubi.client.render.MoonWaterRenderer;
 import com.sanhiruzu.musubi.network.TamaBindVfxPayload;
+import com.sanhiruzu.musubi.network.CometVfxPayload;
 import com.sanhiruzu.musubi.network.ItomakiUnspoolVfxPayload;
 import com.sanhiruzu.musubi.network.MoonRiteVfxPayload;
 import net.minecraft.client.Minecraft;
@@ -63,6 +66,8 @@ public class MusubiClient {
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(TamaCollectionVfx::onRenderLevelStage);
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(ItomakiUnspoolVfx::onRenderLevelStage);
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(MoonReflectionVfx::onRenderLevelStage);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(MoonWaterRenderer::onRenderLevelStage);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(CometVfx::onRenderLevelStage);
 
         event.enqueueWork(() -> {
             registerTamaStrandProperty();
@@ -133,6 +138,12 @@ public class MusubiClient {
     public static void playMoonRiteVfx(net.minecraft.world.level.Level level, MoonRiteVfxPayload payload) {
         if (!(level instanceof ClientLevel clientLevel)) return;
         MoonReflectionVfx.accept(clientLevel, payload);
+    }
+
+    /** Client-side comet crossing: register the event; the sky renderer takes it from there. */
+    public static void playCometVfx(net.minecraft.world.level.Level level, CometVfxPayload payload) {
+        if (!(level instanceof ClientLevel clientLevel)) return;
+        CometVfx.accept(clientLevel, payload);
     }
 
     /**

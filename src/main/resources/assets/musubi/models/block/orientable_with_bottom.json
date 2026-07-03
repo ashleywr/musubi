@@ -1,9 +1,0 @@
-{
-	"parent": "minecraft:block/orientable_with_bottom",
-	"textures": {
-		"top": "minecraft:block/oak_planks",
-		"front": "minecraft:block/oak_planks",
-		"side": "minecraft:block/oak_planks",
-		"bottom": "minecraft:block/oak_planks"
-	}
-}

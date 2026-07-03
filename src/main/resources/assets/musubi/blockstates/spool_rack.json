@@ -1,20 +1,12 @@
 {
   "variants": {
-    "facing=north,hanging=false,loaded=false": { "model": "musubi:block/spool_rack" },
-    "facing=east,hanging=false,loaded=false":  { "model": "musubi:block/spool_rack", "y": 90 },
-    "facing=south,hanging=false,loaded=false": { "model": "musubi:block/spool_rack", "y": 180 },
-    "facing=west,hanging=false,loaded=false":  { "model": "musubi:block/spool_rack", "y": 270 },
-    "facing=north,hanging=true,loaded=false":  { "model": "musubi:block/spool_rack", "x": 180 },
-    "facing=east,hanging=true,loaded=false":   { "model": "musubi:block/spool_rack", "x": 180, "y": 90 },
-    "facing=south,hanging=true,loaded=false":  { "model": "musubi:block/spool_rack", "x": 180, "y": 180 },
-    "facing=west,hanging=true,loaded=false":   { "model": "musubi:block/spool_rack", "x": 180, "y": 270 },
-    "facing=north,hanging=false,loaded=true": { "model": "musubi:block/spool_rack_loaded" },
-    "facing=east,hanging=false,loaded=true":  { "model": "musubi:block/spool_rack_loaded", "y": 90 },
-    "facing=south,hanging=false,loaded=true": { "model": "musubi:block/spool_rack_loaded", "y": 180 },
-    "facing=west,hanging=false,loaded=true":  { "model": "musubi:block/spool_rack_loaded", "y": 270 },
-    "facing=north,hanging=true,loaded=true":  { "model": "musubi:block/spool_rack_loaded", "x": 180 },
-    "facing=east,hanging=true,loaded=true":   { "model": "musubi:block/spool_rack_loaded", "x": 180, "y": 90 },
-    "facing=south,hanging=true,loaded=true":  { "model": "musubi:block/spool_rack_loaded", "x": 180, "y": 180 },
-    "facing=west,hanging=true,loaded=true":   { "model": "musubi:block/spool_rack_loaded", "x": 180, "y": 270 }
+    "facing=north,hanging=false": { "model": "musubi:block/spool_rack" },
+    "facing=east,hanging=false":  { "model": "musubi:block/spool_rack", "y": 90 },
+    "facing=south,hanging=false": { "model": "musubi:block/spool_rack", "y": 180 },
+    "facing=west,hanging=false":  { "model": "musubi:block/spool_rack", "y": 270 },
+    "facing=north,hanging=true":  { "model": "musubi:block/spool_rack", "x": 180 },
+    "facing=east,hanging=true":   { "model": "musubi:block/spool_rack", "x": 180, "y": 90 },
+    "facing=south,hanging=true":  { "model": "musubi:block/spool_rack", "x": 180, "y": 180 },
+    "facing=west,hanging=true":   { "model": "musubi:block/spool_rack", "x": 180, "y": 270 }
   }
 }

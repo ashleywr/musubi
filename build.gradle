@@ -95,6 +95,9 @@ dependencies {
     // Local dev jars (spark profiler, etc.) — place in libs/
     fileTree(dir: 'libs', include: '*.jar').each { f -> localRuntime files(f) }
 
+    // AutoMine testing framework
+    localRuntime files('C:/WorkDir/AutoMineTesting/build/libs/automine_testing-neoforge-1.21.1-0.1.0.jar')
+
     // Unit tests
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'

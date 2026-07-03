@@ -20,6 +20,7 @@ public final class MusubiNetwork {
         registrar.playToClient(com.sanhiruzu.musubi.network.ItomakiUnspoolVfxPayload.TYPE,
             com.sanhiruzu.musubi.network.ItomakiUnspoolVfxPayload.STREAM_CODEC, MusubiNetwork::handleItomakiUnspool);
         registrar.playToClient(MoonRiteVfxPayload.TYPE, MoonRiteVfxPayload.STREAM_CODEC, MusubiNetwork::handleMoonRiteVfx);
+        registrar.playToClient(CometVfxPayload.TYPE, CometVfxPayload.STREAM_CODEC, MusubiNetwork::handleCometVfx);
     }
 
     private static void handleAttune(AttuneKeyPayload payload, IPayloadContext context) {
@@ -50,6 +51,14 @@ public final class MusubiNetwork {
         context.enqueueWork(() -> {
             if (context.player() instanceof LocalPlayer player) {
                 MusubiClient.playMoonRiteVfx(player.level(), payload);
+            }
+        });
+    }
+
+    private static void handleCometVfx(CometVfxPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof LocalPlayer player) {
+                MusubiClient.playCometVfx(player.level(), payload);
             }
         });
     }

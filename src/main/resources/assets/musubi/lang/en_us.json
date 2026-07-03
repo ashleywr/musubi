@@ -21,7 +21,6 @@
 
   "block.musubi.spinning_wheel": "Spinning Wheel",
   "block.musubi.marudai": "Marudai",
-  "block.musubi.torii": "Torii",
   "block.musubi.spool_rack": "Spool Rack",
   "block.musubi.silkworm": "Silkworm",
   "block.musubi.shrine_stone": "Shrine Stone",
@@ -202,7 +201,6 @@
   "musubi.block.donation_box.lore": "Saisen-bako (賽銭箱)",
   "musubi.block.donation_box.summary": "A wooden offering box",
   "musubi.block.donation_box.use": "Donate items to queue REI",
-  "structure.musubi.mountain_shrine": "Mountain Shrine",
   "musubi.block.donation_box.result": "Bow twice to complete the ritual",
   "musubi.block.loom.lore": "Ori-bata (織機)",
   "musubi.block.loom.summary": "An autocrafter for weaving patterns",
