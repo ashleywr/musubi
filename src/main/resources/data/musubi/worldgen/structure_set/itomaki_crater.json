@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 72851493,
+    "separation": 32,
+    "spacing": 96
+  },
+  "structures": [
+    {
+      "structure": "musubi:itomaki_crater",
+      "weight": 1
+    }
+  ]
+}

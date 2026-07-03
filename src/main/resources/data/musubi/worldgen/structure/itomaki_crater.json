@@ -1,0 +1,7 @@
+{
+  "biomes": "#musubi:has_crater",
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "beard_thin",
+  "type": "musubi:itomaki_crater"
+}
