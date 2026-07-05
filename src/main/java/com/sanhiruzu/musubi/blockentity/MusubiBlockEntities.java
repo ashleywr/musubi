@@ -51,4 +51,9 @@ public class MusubiBlockEntities {
         BLOCK_ENTITIES.register("loom", () -> BlockEntityType.Builder
             .of(LoomBlockEntity::new, MusubiBlocks.LOOM.get())
             .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<HikidashiBlockEntity>> HIKIDASHI =
+        BLOCK_ENTITIES.register("hikidashi", () -> BlockEntityType.Builder
+            .of(HikidashiBlockEntity::new, MusubiBlocks.HIKIDASHI.get())
+            .build(null));
 }

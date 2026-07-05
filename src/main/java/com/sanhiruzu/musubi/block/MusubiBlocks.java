@@ -110,6 +110,14 @@ public class MusubiBlocks {
                 .sound(SoundType.GRASS)
         ));
 
+    public static final DeferredHolder<Block, HikidashiBlock> HIKIDASHI =
+        register("hikidashi", () -> new HikidashiBlock(
+            BlockBehaviour.Properties.of()
+                .strength(2.0f, 6.0f)
+                .sound(SoundType.WOOD)
+                .noOcclusion()
+        ));
+
     private static <T extends Block> DeferredHolder<Block, T> register(String name, Supplier<T> block) {
         DeferredHolder<Block, T> holder = BLOCKS.register(name, block);
         BLOCK_ITEMS.register(name, () -> new MusubiBlockItem(holder.get(), new Item.Properties()));

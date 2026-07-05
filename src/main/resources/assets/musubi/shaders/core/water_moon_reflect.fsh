@@ -10,8 +10,8 @@ in vec4 vertexColor;          // white; alpha feathers the scan-radius boundary
 
 out vec4 fragColor;
 
-const vec3 MOON_TINT = vec3(0.92, 0.95, 1.00);
-const vec3 SKY_TINT  = vec3(0.30, 0.42, 0.62);
+// Pale silver-blue — moonlight on water, not daylight.
+const vec3 MOON_TINT = vec3(0.88, 0.93, 1.00);
 
 // Gradient of one directional sine wavelet; "slope" is the surface slope it
 // contributes (amplitude * wavenumber), so tuning stays in normal-space.
@@ -20,15 +20,12 @@ vec2 waveGrad(vec2 p, float t, vec2 dir, float wavelength, float slope, float sp
     return dir * (slope * cos(k * dot(dir, p) - speed * t));
 }
 
-// Analytic normal of a few summed wavelets. Total slope is kept small so the
-// moon's image smears into a coherent glitter path instead of dissolving
-// into noise.
+// Barely-there ripples — the surface is a near-perfect mirror so the moon holds a
+// clean round shape; the tiny slope only gives the disc a living, watery edge.
 vec3 waveNormal(vec2 p, float t) {
     vec2 g = vec2(0.0);
-    g += waveGrad(p, t, vec2( 0.941,  0.339), 6.0, 0.045, 0.9);
-    g += waveGrad(p, t, vec2(-0.573,  0.820), 3.4, 0.028, 1.3);
-    g += waveGrad(p, t, vec2( 0.259, -0.966), 2.2, 0.016, 1.7);
-    g += waveGrad(p, t, vec2(-0.868, -0.497), 1.3, 0.008, 2.4);
+    g += waveGrad(p, t, vec2( 0.941,  0.339), 7.0, 0.006, 0.35);
+    g += waveGrad(p, t, vec2(-0.573,  0.820), 4.5, 0.004, 0.45);
     return normalize(vec3(-g.x, 1.0, -g.y));
 }
 
@@ -40,28 +37,28 @@ void main() {
     float t = GameTime * 1200.0; // seconds of game time (24000 ticks / 20 tps)
     vec3 n = waveNormal(relPos.xz + CameraPos.xz, t);
 
-    // True mirror optics: bounce the view ray off the rippled surface and light
-    // the fragment by how well it lines up with the actual moon. The bright path
-    // therefore sits between the camera and the moon's azimuth and tracks both.
+    // Mirror the view ray; where it lands on the moon we draw the moon's disc.
+    // Because the water plane is near-horizontal, the round disc foreshortens into
+    // an ellipse stretched toward the viewer — exactly how a real reflection sits.
     vec3 refl = reflect(viewDir, n);
     float alignment = dot(refl, MoonDir);
 
-    // The vanilla moon quad subtends ~5.7 degrees of half-angle (cos ~0.995);
-    // the wavelets stretch this disc lengthwise into the glitter path.
-    float disc = smoothstep(0.9945, 0.9962, alignment);
-    float halo = pow(max(alignment, 0.0), 40.0) * 0.12;
+    // Crisp round disc at the moon's angular radius (exaggerated a touch so the
+    // reflected moon reads clearly), with a narrow soft rim from the ripples.
+    float disc = smoothstep(0.9880, 0.9918, alignment);
+    // Faint limb glow hugging the disc so it doesn't end on a hard line.
+    float glow = pow(max(alignment, 0.0), 120.0) * 0.5;
 
-    // Schlick fresnel: strong looking across the water toward the moon, faint
-    // looking straight down — how a real water reflection behaves.
+    // Schlick fresnel with a high floor so the reflection stays visible even when
+    // peering steeply down at the surface.
     float facing = clamp(dot(-viewDir, n), 0.0, 1.0);
-    float fresnel = 0.06 + 0.94 * pow(1.0 - facing, 5.0);
+    float fresnel = 0.5 + 0.5 * pow(1.0 - facing, 5.0);
 
-    // A whisper of reflected sky dome so moonlit water reads as a mirror
-    // surface rather than a painted-on highlight.
-    float horizon = pow(1.0 - clamp(refl.y, 0.0, 1.0), 2.0);
-    vec3 color = MOON_TINT * (disc * 1.3 + halo) + SKY_TINT * (0.05 + 0.06 * horizon);
+    vec3 color = MOON_TINT * (disc * 2.6 + glow);
 
     // Rendered additively (src_alpha, one): alpha scales how much light is added.
-    float strength = fresnel * MoonBrightness * vertexColor.a;
+    // Moon brightness floored so half-phase nights still show a disc.
+    float moon = mix(0.6, 1.0, MoonBrightness);
+    float strength = (disc + glow * 0.5) * fresnel * moon * vertexColor.a;
     fragColor = vec4(color, strength);
 }

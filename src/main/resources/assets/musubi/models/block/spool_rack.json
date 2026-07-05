@@ -71,62 +71,6 @@
 			}
 		},
 		{
-			"name": "peg_3",
-			"from": [4, 10, 10],
-			"to": [5, 11, 15],
-			"rotation": {"angle": 22.5, "axis": "x", "origin": [4, 9, 15]},
-			"faces": {
-				"north": {"uv": [9, 8, 11, 10], "texture": "#wood"},
-				"east": {"uv": [0, 0, 6, 2], "texture": "#wood"},
-				"south": {"uv": [0, 0, 2, 2], "texture": "#wood"},
-				"west": {"uv": [5, 9, 11, 11], "texture": "#wood"},
-				"up": {"uv": [0, 0, 2, 6], "texture": "#wood"},
-				"down": {"uv": [0, 0, 2, 6], "texture": "#wood"}
-			}
-		},
-		{
-			"name": "peg_4",
-			"from": [4, 5, 10],
-			"to": [5, 6, 15],
-			"rotation": {"angle": 22.5, "axis": "x", "origin": [4, 4, 15]},
-			"faces": {
-				"north": {"uv": [5, 8, 7, 10], "texture": "#wood"},
-				"east": {"uv": [0, 0, 6, 2], "texture": "#wood"},
-				"south": {"uv": [0, 0, 2, 2], "texture": "#wood"},
-				"west": {"uv": [5, 9, 11, 11], "texture": "#wood"},
-				"up": {"uv": [0, 0, 2, 6], "texture": "#wood"},
-				"down": {"uv": [0, 0, 2, 6], "texture": "#wood"}
-			}
-		},
-		{
-			"name": "peg_1",
-			"from": [11, 10, 10],
-			"to": [12, 11, 15],
-			"rotation": {"angle": 22.5, "axis": "x", "origin": [11, 9, 15]},
-			"faces": {
-				"north": {"uv": [9, 8, 11, 10], "texture": "#wood"},
-				"east": {"uv": [0, 0, 6, 2], "texture": "#wood"},
-				"south": {"uv": [0, 0, 2, 2], "texture": "#wood"},
-				"west": {"uv": [5, 9, 11, 11], "texture": "#wood"},
-				"up": {"uv": [0, 0, 2, 6], "texture": "#wood"},
-				"down": {"uv": [0, 0, 2, 6], "texture": "#wood"}
-			}
-		},
-		{
-			"name": "peg_3",
-			"from": [11, 5, 10],
-			"to": [12, 6, 15],
-			"rotation": {"angle": 22.5, "axis": "x", "origin": [11, 4, 15]},
-			"faces": {
-				"north": {"uv": [9, 8, 11, 10], "texture": "#wood"},
-				"east": {"uv": [0, 0, 6, 2], "texture": "#wood"},
-				"south": {"uv": [0, 0, 2, 2], "texture": "#wood"},
-				"west": {"uv": [5, 9, 11, 11], "texture": "#wood"},
-				"up": {"uv": [0, 0, 2, 6], "texture": "#wood"},
-				"down": {"uv": [0, 0, 2, 6], "texture": "#wood"}
-			}
-		},
-		{
 			"name": "top_join_beam",
 			"from": [1, 13, 13],
 			"to": [15, 14, 14],

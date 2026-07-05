@@ -52,9 +52,14 @@ public final class WaterMoonShader {
         ShaderInstance shader = waterMoonShader;
         if (shader == null) return;
         Vec3 moon = MoonReflectionMath.moonDirection(level, partialTick);
-        shader.safeGetUniform("MoonDir").set((float) moon.x, (float) moon.y, (float) moon.z);
-        shader.safeGetUniform("MoonBrightness").set(level.getMoonBrightness());
-        shader.safeGetUniform("CameraPos").set((float) cameraPos.x, (float) cameraPos.y, (float) cameraPos.z);
+        if (shader.safeGetUniform("GameTime") != null)
+            shader.safeGetUniform("GameTime").set((float) (level.getGameTime() + partialTick) / 24000.0f);
+        if (shader.safeGetUniform("MoonDir") != null)
+            shader.safeGetUniform("MoonDir").set((float) moon.x, (float) moon.y, (float) moon.z);
+        if (shader.safeGetUniform("MoonBrightness") != null)
+            shader.safeGetUniform("MoonBrightness").set(level.getMoonBrightness());
+        if (shader.safeGetUniform("CameraPos") != null)
+            shader.safeGetUniform("CameraPos").set((float) cameraPos.x, (float) cameraPos.y, (float) cameraPos.z);
     }
 
     /**

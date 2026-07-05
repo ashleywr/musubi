@@ -9,6 +9,7 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.client.renderer.ShaderInstance;
 import com.sanhiruzu.musubi.util.MoonReflectionMath;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -47,12 +48,12 @@ public final class MoonWaterRenderer {
 
     /** Cached still-water surfaces as {blockX, surfaceY, blockZ}. */
     private static final List<float[]> SURFACES = new ArrayList<>();
-    private static long lastScanTick = Long.MIN_VALUE;
+    private static long lastScanTick = -SCAN_INTERVAL;
 
     private MoonWaterRenderer() {}
 
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
+        if (!event.getStage().toString().equals("minecraft:after_entities")) return;
 
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
@@ -61,7 +62,6 @@ public final class MoonWaterRenderer {
         float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         if (!WaterMoonShader.shouldApply(level)) {
             SURFACES.clear();
-            lastScanTick = Long.MIN_VALUE;
             return;
         }
 
@@ -76,8 +76,6 @@ public final class MoonWaterRenderer {
         MeshData mesh = buildMesh(event.getPoseStack(), camera);
         if (mesh == null) return;
 
-        WaterMoonShader.updateUniforms(level, camera, partial);
-
         RenderSystem.enableBlend();
         // Additive: the reflection only ever adds moonlight, it never darkens water.
         RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
@@ -85,6 +83,17 @@ public final class MoonWaterRenderer {
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         RenderSystem.setShader(WaterMoonShader::get);
+
+        ShaderInstance shader = WaterMoonShader.get();
+        if (shader != null) {
+            WaterMoonShader.updateUniforms(level, camera, partial);
+
+            // Set matrix uniforms from the current RenderSystem state
+            if (shader.safeGetUniform("ProjMat") != null)
+                shader.safeGetUniform("ProjMat").set(RenderSystem.getProjectionMatrix());
+            if (shader.safeGetUniform("ModelViewMat") != null)
+                shader.safeGetUniform("ModelViewMat").set(RenderSystem.getModelViewMatrix());
+        }
 
         BufferUploader.drawWithShader(mesh);
 

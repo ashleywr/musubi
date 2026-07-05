@@ -228,6 +228,7 @@ public class MusubiClient {
         event.registerBlockEntityRenderer(MusubiBlockEntities.SHINBOKU.get(), ShinbokuBER::new);
         event.registerBlockEntityRenderer(MusubiBlockEntities.MARUDAI.get(), MarudaiBER::new);
         event.registerBlockEntityRenderer(MusubiBlockEntities.ITOMAKI.get(), ItomakiBER::new);
+        event.registerBlockEntityRenderer(MusubiBlockEntities.HIKIDASHI.get(), com.sanhiruzu.musubi.client.render.HikidashiBER::new);
     }
 
     /** The spinning wheel's rotating disc is its own model, not tied to any blockstate,
@@ -428,6 +429,10 @@ public class MusubiClient {
         return ((Mth.clamp((int) Math.round(r), 0, 255)) << 16)
             | ((Mth.clamp((int) Math.round(g), 0, 255)) << 8)
             | (Mth.clamp((int) Math.round(b), 0, 255));
+    }
+
+    public static void openHikidashiScreen(net.minecraft.core.BlockPos blockPos, java.util.List<SkeinContents> storage) {
+        Minecraft.getInstance().setScreen(new com.sanhiruzu.musubi.client.screen.HikidashiScreen(blockPos, storage));
     }
 
     public record ItemColorPalette(int base, int accent, int sheen) {

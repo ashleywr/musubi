@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "S S",
+    "SWS",
+    "S S"
+  ],
+  "key": {
+    "S": { "item": "musubi:skein" },
+    "W": { "item": "minecraft:dark_oak_wood" }
+  },
+  "result": {
+    "id": "musubi:hikidashi",
+    "count": 1
+  }
+}

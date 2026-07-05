@@ -282,6 +282,19 @@ public class SpoolRackBlockEntity extends BlockEntity {
         return false;
     }
 
+    /**
+     * Collects all non-empty SkeinContents from this rack into the given list.
+     * Used by storage viewers to aggregate contents.
+     */
+    public void addAllContents(List<SkeinContents> out) {
+        for (int i = 0; i < SLOTS; i++) {
+            SkeinContents slot = slots[i];
+            if (slot != null && slot.count() > 0) {
+                out.add(slot);
+            }
+        }
+    }
+
     /** Mirrors inventory occupancy into the blockstate's loaded property. */
     private void syncLoadedState() {
         if (level == null || level.isClientSide) return;
