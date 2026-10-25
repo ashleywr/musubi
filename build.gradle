@@ -86,7 +86,7 @@ dependencies {
     localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 
     // Jade — optional tooltip integration. Sourced from modpack runtime.
-    compileOnly files('C:/WorkDir/synesthesia/.runtime/mods/Jade-1.21.1-NeoForge-15.10.5.jar')
+    compileOnly "maven.modrinth:jade:15.10.5+neoforge"
 
     // Sophisticated Backpacks — optional integration for auto-thread backpack upgrade.
     // Uncomment once the SB maven coordinate is confirmed.
@@ -181,4 +181,7 @@ idea {
 }
 
 ext.synesthesiaLocalModKey = 'musubi'
-apply from: 'C:/WorkDir/synesthesia/tools/synesthesia-sync.gradle'
+def synesthesiaSyncScript = file('C:/WorkDir/synesthesia/tools/synesthesia-sync.gradle')
+if (synesthesiaSyncScript.exists()) {
+    apply from: synesthesiaSyncScript
+}
